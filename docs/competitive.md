@@ -40,3 +40,17 @@ AdoptLab's working hypothesis is reducing the setup and handoff between a materi
 | Script + spreadsheet | Shared Python executor and exported trial table can serve the same small task | A developer's existing local workflow | Reference workflow implemented; collaborative handoff work requires maintainer observation |
 
 Public pricing and available features need rechecking before purchase. No subscription was bought. Model costs are in the shared local ledger; hosted telemetry charges/quotas were not independently audited. Preparation/learning time was not rigorously timed, so it is not ranked. Public impressions, registration, activation and revenue remain unknown. Stars and issue activity supply community context, without conversion evidence.
+
+### Pricing snapshot and adoption implications
+
+Official pages rechecked 2026-09-30; USD figures below concern platform plans, separate from model inference and local infrastructure.
+
+| Product | Published entry / next tier | Implication and unknowns |
+|---|---|---|
+| [Promptfoo](https://www.promptfoo.dev/pricing/) | Community is free, including local evaluations and custom integrations; red teaming has 10k probes/month. Enterprise and on-premise use custom quotes. | Local evaluation can start without buying collaboration features. Red-team limits concern that workflow; inference charges depend on providers. Paid collaboration was not tested. |
+| [Langfuse](https://langfuse.com/pricing) | Hobby: free, 50k units/month, 30-day data access, two users. Core: $29/month, 100k included units and $8/100k additional units at the initial usage tier; 90-day access and unlimited users. | Cloud lowers infrastructure preparation; quotas, access windows and additional usage matter for repeated/team experiments. These are billable units, separate from model token costs. This project's billing screen was not audited. |
+| [Mintlify](https://www.mintlify.com/pricing) | Starter, Pro and Enterprise are listed; Pro includes 10k AI credits/month, overage $0.01/credit. Assistant answers use 25 credits. | Documentation publishing and AI assistance have separate usage considerations. The retrieved page did not expose base plan amounts reliably; keep them unknown pending an interactive quote/view. No purchase or assistant trial. |
+| [PostHog](https://posthog.com/pricing) | Usage-based product pricing and configurable billing limits; exact analytics free allowance and event tiers were not reliably present in the retrieved page. | Forecast using the selected product and current calculator. Desk research supports event/funnel overlap; implementation and invoice experience remain untested. |
+| Script + spreadsheet / AdoptLab | Local reference workflow and original MIT code, with no product subscription; model execution is separately metered. | Setup and maintenance effort are real adoption costs. Human preparation time and willingness to pay require observation, beyond low inference expense. |
+
+For a small team, a free entry alone does not settle the choice. Existing test infrastructure favors Promptfoo, shared trace inspection favors Langfuse, and published documentation favors Mintlify. AdoptLab needs maintainer evidence that its compact revision workflow saves enough preparation or handoff effort to justify another local tool.
