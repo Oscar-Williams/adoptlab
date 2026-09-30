@@ -6,6 +6,10 @@
 
 The first task reads synthetic records, normalizes integer money and timezone-aware dates, writes JSON outputs and checks them with an independently implemented oracle. Four restricted tools run through a real stdio MCP connection. Maintainers can create immutable guide/description versions while preserving the backend and tool schemas.
 
+## Published evidence
+
+[Open the bilingual explorer](https://adoptlab.lukewilliams.top) · [Pages mirror](https://adoptlab.pages.dev). Inspect the frozen 72-episode matrix, filter task families and download the reviewed report. The full execution workspace runs locally.
+
 ## Try it
 
 Use an independent Python 3.11 environment. From this directory:
