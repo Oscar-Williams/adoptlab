@@ -1,0 +1,20 @@
+description: AdoptLab shared MCP executor - material comparison and corrupted-output control
+providers:
+  - id: python:provider.py
+    config:
+      mode: protocol
+prompts:
+  - 'Verify {{task}} with material {{material}}'
+tests:
+  - vars: {task: task-01, material: A}
+    assert:
+      - {type: javascript, value: 'JSON.parse(output).passed === true'}
+  - vars: {task: task-01, material: B}
+    assert:
+      - {type: javascript, value: 'JSON.parse(output).passed === true'}
+  - vars: {task: task-11, material: A}
+    assert:
+      - {type: javascript, value: 'JSON.parse(output).passed === true'}
+  - vars: {task: task-01, material: B, fault: true}
+    assert:
+      - {type: javascript, value: 'JSON.parse(output).passed === false'}

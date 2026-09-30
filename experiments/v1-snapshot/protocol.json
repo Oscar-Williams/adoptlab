@@ -1,0 +1,96 @@
+{
+  "id": "materials-v1",
+  "frozen_at": "2026-09-30T12:21:10.842969+00:00",
+  "mode": "model",
+  "model": "deepseek-flash",
+  "temperature": 0,
+  "thinking": "disabled",
+  "requests_per_episode": 8,
+  "output_tokens_per_request": 1024,
+  "input_bound": 16000,
+  "episode_seconds": 180,
+  "trials": 3,
+  "tasks": {
+    "task-01": {
+      "family": "threshold",
+      "split": "exploration",
+      "hash": "39957de5489ff9cb112e2906070bb208a1dd1e3b117a52fb13e9d9f07ad05517"
+    },
+    "task-02": {
+      "family": "threshold",
+      "split": "exploration",
+      "hash": "7c5ecc3d42e102c97439cdfa80f490e3084dc70f9af4eb353e86c32b33c5e89c"
+    },
+    "task-03": {
+      "family": "whitespace",
+      "split": "exploration",
+      "hash": "b0b03a3d31642286b981c4c665b99b6633358ee901909c0f1c8a505a7acce406"
+    },
+    "task-04": {
+      "family": "whitespace",
+      "split": "exploration",
+      "hash": "2cee8907814c657e9ea462ca5062a1ee1b5b131c0316efb0ec288314fd30da10"
+    },
+    "task-05": {
+      "family": "currency",
+      "split": "exploration",
+      "hash": "f212582a228ff2a6241fd2a5e20298de05a808b38c48337c28e308538b70ce33"
+    },
+    "task-06": {
+      "family": "currency",
+      "split": "exploration",
+      "hash": "5d4e756289d1e1883bb3ba1a38d5b0835bb0a54cfc401ae9360d0837558b244d"
+    },
+    "task-07": {
+      "family": "timezone",
+      "split": "held_out",
+      "hash": "4f6f147b89bff37c91dba567fdb93acf794ad3f0725a85d3d6501b6689573137"
+    },
+    "task-08": {
+      "family": "timezone",
+      "split": "held_out",
+      "hash": "67daacd68a66ab60b92a6a3bf077612ed78e88434dc5ba8d7573d4bce7b1d837"
+    },
+    "task-09": {
+      "family": "empty",
+      "split": "held_out",
+      "hash": "573595d9327c391585384720d562ae524453d52449e1f7e5096513d01cbf9fe1"
+    },
+    "task-10": {
+      "family": "empty",
+      "split": "held_out",
+      "hash": "fc73dcab08dd2bfe191bb52e2543c3d0b9e059d6634eda6517fb456572a21e51"
+    },
+    "task-11": {
+      "family": "invalid",
+      "split": "held_out",
+      "hash": "631e9e6f573473c338ca466bbe9a65ac2c8490e89df4f8815ba6c129d977571e"
+    },
+    "task-12": {
+      "family": "invalid",
+      "split": "held_out",
+      "hash": "98eb5a687da407890e0a7b7c4c6e3bc6e779f1b49bbbef0964a60c0cae35f32a"
+    }
+  },
+  "materials": {
+    "A": "69badc15b081abad3c70bf6bcfe6f40cd4bfd31a09f27fef8dc175c7917539e4",
+    "B": "e4b2e69ed7a29d8101a4d317cfe32ae39a08551b2f8eef9d85b0f254039de80a"
+  },
+  "code": {
+    "contract.py": "c37f490005993f9aaa360a35c4934f93817669c966bf701f5019384cec36ff50",
+    "server.py": "d48b967385489f908533b7117ba42c73e82c5827d38d4054353d436d9e00887a",
+    "engine.py": "81d77b475b4a0d41c94390eaa21442f991c226cb31438bd0a969e16c12d56ae2",
+    "tasks.py": "7914ac20c8f18ba5a4488f19973589be3808be34e1abcc874cc3bdcf92d47ac9"
+  },
+  "primary": "Task success, with valid-output and correct-rejection strata reported separately. Failures and exhausted runs remain in denominator.",
+  "cost": "Peak input-miss/output rates 2/8 CNY per million. Report usage-priced upper bound; invoice may be lower.",
+  "worst_model_cny": 23.150592,
+  "existing_cost": {
+    "upper_bound_cny": 0.028778,
+    "usage_priced_upper_cny": 0.028778,
+    "unresolved_requests": 0,
+    "limit_cny": 200
+  },
+  "limits": "Six task families, three held-out families. Repeated trials are correlated. No human adoption or population causal claim.",
+  "selection": "B fixed before held-out observations; no updates to A/B during this matrix. Alternate order per task/trial. No application response cache."
+}

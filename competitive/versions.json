@@ -1,0 +1,7 @@
+{
+  "promptfoo": "0.123.1",
+  "langfuse_sdk": "4.16.0",
+  "node": "24",
+  "model": "deepseek-flash",
+  "checked_at": "2026-09-30"
+}

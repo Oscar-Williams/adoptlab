@@ -1,0 +1,20 @@
+name: Reproducible problem
+description: Report a synthetic task or onboarding failure
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User task and expected result
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal synthetic reproduction
+      description: Include versions, commands and safe fixture details; exclude keys and personal files.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual verification and error code
