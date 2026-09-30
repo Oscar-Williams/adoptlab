@@ -1,0 +1,29 @@
+# Automatic website deployment
+
+The GitHub repository contains both the local application and a complete, allowlisted evidence site in `public-site/`. Cloudflare Pages deploys only `dist/`. Its build uses Python's standard library; no package installation, database, model call or application secret is required.
+
+## Cloudflare Pages Git integration
+
+1. In Workers & Pages, create a **Pages** application and connect GitHub. Authorize access to the `Oscar-Williams/adoptlab` repository only.
+2. Select repository `adoptlab`, production branch `main`, framework preset **None**.
+3. Keep the root directory as the repository root. Set build command to `python3 scripts/build_static_site.py` and build output directory to `dist`.
+4. Save and deploy. Verify the generated Pages URL, English/Chinese switching, material/family filters, reports and MIT license.
+5. In Custom domains, add `adoptlab.lukewilliams.top`. Follow the Pages DNS association process and check HTTPS. Keep other root-domain and email records unchanged.
+
+Future pushes to `main` build and publish the saved evidence site. Preview branches can be enabled through Pages settings. Pages deployment and GitHub contract CI are independent by default; Pages does not wait for GitHub tests. Use protected branches with required checks when the team is ready to require verified merges.
+
+The site serves recorded evidence. A source change does not regenerate model results. To publish a new experiment, review and sanitize its report, update the committed assets and results narrative together, and retain a versioned experiment protocol. Do not run paid experiments in the Pages build.
+
+## Check locally
+
+```powershell
+python scripts/check_public_tree.py
+python scripts/build_static_site.py
+python -m http.server 8769 --bind 127.0.0.1 --directory dist
+```
+
+The build verifies its file allowlist, credential/private-path patterns and the frozen v1 episode counts. A new experiment version should update these explicit assertions alongside the evidence review. The source repository's local credential configuration remains outside the repository. Set no DeepSeek or Langfuse key in Cloudflare Pages.
+
+The live Python/MCP service remains local. Remote execution requires authentication, per-user isolation, queue/resource controls and separate security validation before publication.
+
+References checked 2026-09-30: [Git integration](https://developers.cloudflare.com/pages/get-started/git-integration/), [custom domains](https://developers.cloudflare.com/pages/configuration/custom-domains/).

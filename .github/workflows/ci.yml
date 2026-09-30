@@ -1,5 +1,7 @@
 name: Verify contracts and integration
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   verify:
     runs-on: windows-latest
@@ -13,3 +15,4 @@ jobs:
         env:
           ADOPTLAB_RUNTIME: '${{ runner.temp }}/adoptlab'
       - run: python scripts/check_public_tree.py
+      - run: python scripts/build_static_site.py
