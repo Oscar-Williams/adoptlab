@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Display local browser material comparisons separately from automated experiments, preserving the existing automated report shape.
+- Explain valid output and correct input rejection, provide bilingual form guidance, and restart anonymous linkage after withdrawal.
+- Add eight-profile browser walkthroughs and an allowlisted static evidence publication bundle.
+
 ## 0.1.0 · 2026-09-30
 
 - Original records MCP tools and independently implemented verification.

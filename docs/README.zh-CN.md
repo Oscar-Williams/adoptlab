@@ -1,5 +1,9 @@
 # AdoptLab
 
+比较界面按执行来源分别显示自动实验、本地浏览器与观察记录，支持自定义材料版本；验收摘要解释有效输出和正确拒绝。撤回后继续操作使用新匿名会话。
+
+公开展示可使用 public-site 的保存结果浏览器：在本地具有冻结实验时运行 `python scripts/build_public_site.py`，导出独立白名单发布目录。页面不提供实时推理、上传或执行 API；当前完整工作台继续运行于本地。
+
 [English](../README.md) · [架构与取舍](architecture.md) · [实测报告](experiment-results.md) · [竞品工作流](competitive.md)
 
 **比较接入材料，验证首次任务，将反馈关联到经过验收的修订。** AdoptLab 面向维护文档、示例和工具描述的小型 API/MCP 团队。

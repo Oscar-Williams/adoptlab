@@ -17,6 +17,8 @@ Open the local address printed by the server. Create an experiment. Choose a mat
 
 Inspect the run status and verification reason. Use **Re-verify** to check the stored artifacts. A verified rejection is a valid result for intentionally invalid input; ordinary tasks need valid outputs.
 
+**Compare material versions** shows each execution cohort separately. Automated trials, local browser sessions and observed human sessions retain their own denominators. A browser session establishes local execution, without establishing a unique participant. The verdict summary explains valid output and correct rejection alongside the raw evidence.
+
 ## Make a material revision
 
 Submit feedback describing the obstacle. In the material editor, use B as a starting point, change the guide or one of the four descriptions, and save a new immutable version. Existing versions remain unchanged.
@@ -24,6 +26,8 @@ Submit feedback describing the obstacle. In the material editor, use B as a star
 Run the same task using the new version and link the verified run to the feedback. Protocol mode validates the mechanism; use model mode after credentials and current prices are configured to study whether changed materials alter model behavior. Keep the backend, task and verifier fixed and retain failures.
 
 Export the allowlisted report. It contains verdicts, provenance and cost upper bounds, with no private keys, personal paths or free-text feedback. Separate observed developer participation from model experiments and automated browser checks.
+
+Withdrawing a browser's adoption records removes linked events/feedback and anonymizes its runs. Continuing creates a fresh anonymous session and clears previous run/feedback links. Private run artifacts and external telemetry have separate retention boundaries.
 
 ## Read results and choose the next step
 

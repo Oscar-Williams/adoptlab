@@ -148,3 +148,13 @@ def test_ordered_funnel_and_withdrawal(tmp_path):
     s.withdraw('subject')
     assert s.get_run(id)['cohort']=='withdrawn'
     with s.connect() as c:assert c.execute('SELECT COUNT(*) FROM feedback WHERE id=?',(f,)).fetchone()[0]==0
+
+def test_comparison_keeps_browser_and_automation_separate(tmp_path):
+    s=Store(tmp_path);e=s.experiment('comparison')
+    id=s.queue(e,'task-01','B','protocol','human_unverified','browser')
+    asyncio.run(execute(s,id));c=s.comparison(e)
+    assert c['groups']['B']['protocol']['total']==0
+    assert c['cohorts']['human_unverified']['B']['protocol']['passed']==1
+    s.withdraw('browser');c=s.comparison(e)
+    assert c['cohorts']['human_unverified']['B']['protocol']['total']==0
+    assert c['cohorts']['withdrawn']['B']['protocol']['total']==1

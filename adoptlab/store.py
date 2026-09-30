@@ -147,20 +147,26 @@ class Store:
         return {'cohorts':[dict(r) for r in rows],'channels':[dict(r) for r in channels],
                 'interpretation':'Ordered local-instance sessions, two-hour first-session window. Unknown sources, missing links and invalid order stay visible. Automation, unverified browser instances and observed humans are separate. No verified unique-person or causal growth claim.'}
     def comparison(self,exp):
-        rows=self.runs(exp);out={}
-        for v in list(dict.fromkeys(['A','B']+[r['material'] for r in rows])):
-            groups={}
-            for mode in ['protocol','model']:
-                runs=[r for r in rows if r['material']==v and r['mode']==mode and r['cohort']=='automation']
-                done=[r for r in runs if r['result']]
-                groups[mode]={"total":len(runs),"completed":len(done),"passed":sum(r['result']['verification']['passed'] for r in done),
-                              "cost_upper_cny":sum(r['result'].get('cost_upper_cny',0) for r in done),
-                              "normal_total":sum(not catalog()[r['task_id']]['expected_error'] for r in runs),
-                              "normal_passed":sum(r['result']['verification']['passed'] and not catalog()[r['task_id']]['expected_error'] for r in done),
-                              "rejection_total":sum(bool(catalog()[r['task_id']]['expected_error']) for r in runs),
-                              "rejection_passed":sum(r['result']['verification']['passed'] and bool(catalog()[r['task_id']]['expected_error']) for r in done)}
-            out[v]=groups
-        return {"experiment_id":exp,"groups":out,"budget":self.cost(),"interpretation":"Protocol runs establish service correctness. Model trials are exploratory; repeated trials and task families are correlated. Human adoption is reported separately."}
+        rows=self.runs(exp);cohorts={}
+        variants=list(dict.fromkeys(['A','B']+[r['material'] for r in rows]))
+        for cohort in ['automation','human_unverified','human_observed','withdrawn']:
+            out={}
+            for v in variants:
+                groups={}
+                for mode in ['protocol','model']:
+                    runs=[r for r in rows if r['material']==v and r['mode']==mode and r['cohort']==cohort]
+                    done=[r for r in runs if r['result']]
+                    accepted=lambda r:r['status']=='succeeded' and r['result']['verification']['passed']
+                    groups[mode]={"total":len(runs),"completed":len(done),"passed":sum(accepted(r) for r in done),
+                        "cost_upper_cny":sum(r['result'].get('cost_upper_cny',0) for r in done),
+                        "normal_total":sum(not catalog()[r['task_id']]['expected_error'] for r in runs),
+                        "normal_passed":sum(accepted(r) and not catalog()[r['task_id']]['expected_error'] for r in done),
+                        "rejection_total":sum(bool(catalog()[r['task_id']]['expected_error']) for r in runs),
+                        "rejection_passed":sum(accepted(r) and bool(catalog()[r['task_id']]['expected_error']) for r in done)}
+                out[v]=groups
+            cohorts[cohort]=out
+        return {"experiment_id":exp,"groups":cohorts['automation'],"cohorts":cohorts,"budget":self.cost(),
+            "interpretation":"Groups retain automated experiment results. Cohorts separate local browser instances, observed sessions and withdrawn records. Protocol checks measure service correctness; model trials are exploratory. Local instances do not count unique people."}
     def export(self,exp):
         e=self.get_experiment(exp)
         keys=['id','task_id','material','mode','cohort','trial','status','created']

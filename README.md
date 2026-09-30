@@ -26,6 +26,8 @@ Open `http://127.0.0.1:8766`. English is the default; the navigation switches to
 
 The browser executes a local demonstration. Independent developer integration and observed user trials have separate evidence requirements.
 
+Material comparison includes separately labeled execution cohorts and custom versions. Verdict summaries distinguish valid output from correct rejection. Withdrawing records starts a fresh anonymous browser session for subsequent actions.
+
 ## Real model runs
 
 Copy `.env.example` to an ignored `.env`, or use a private configuration outside the repository. Set `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL=deepseek-flash` and current conservative CNY input/output prices per million tokens. Check [DeepSeek pricing](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/) before running. Credentials are never placed in experiment JSON.
@@ -61,3 +63,7 @@ AdoptLab contains the original onboarding/version/verification/budget/product wo
 Windows/Python 3.11, the installed Edge browser, real stdio MCP, DeepSeek and Langfuse SDK have been exercised locally. Hosted multi-user execution, arbitrary external tools, broad model compatibility and independent human trial outcomes are future work.
 
 MIT for original AdoptLab code. External projects retain their own licenses. See [LICENSE](LICENSE), [Contributing](CONTRIBUTING.md) and [Changelog](CHANGELOG.md).
+
+## Publication preview
+
+The [static explorer](public-site/) browses allowlisted saved results without a backend, uploads or inference calls. With the frozen experiment available in your local runtime, `python scripts/build_public_site.py` generates a separate publication directory. This directory contains only the public assets and report, and is the unit to deploy. Keep the execution service local until authentication, isolation and resource governance have been implemented for remote use.
