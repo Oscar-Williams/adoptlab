@@ -86,3 +86,5 @@ MIT for original AdoptLab code. External projects retain their own licenses. See
 ## Publication preview
 
 The [static explorer](public-site/) browses allowlisted saved results without a backend, uploads or inference calls. `python scripts/build_static_site.py` builds the complete committed site into `dist` without local runtime data or third-party dependencies. [Cloudflare Pages Git integration](docs/deployment.md) automatically publishes this directory on updates. The local exporter `scripts/build_public_site.py` prepares evidence for review before updating committed assets. Keep the execution service local until authentication, isolation and resource governance have been implemented for remote use.
+
+[Evidence index](docs/evidence-index.md) connects product decisions, original mechanisms, experiments, review changes and release checks.
