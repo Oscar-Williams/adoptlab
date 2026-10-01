@@ -1,0 +1,748 @@
+{
+  "schema": "adoptlab-static-evidence-v1",
+  "recorded_date": "2026-09-30",
+  "model": "deepseek-flash",
+  "materials": {
+    "A": {
+      "guide": "Use the four record tools to finish the supplied task and save outputs.",
+      "descriptions": {
+        "list_fixture_files": "List input files.",
+        "read_records": "Read records.",
+        "normalize_filter_records": "Normalize and filter records.",
+        "write_outputs": "Write result and summary."
+      }
+    },
+    "B": {
+      "guide": "1. List fixtures and read records.json. 2. Pass its records array and the task's min_cents (integer cents) to normalize_filter_records. 3. Pass the returned result and summary to write_outputs. Validate every row before filtering. Treat tool errors as actionable input errors; report their error code without fabricating output. CNY/USD totals remain separate. Dates require a timezone and normalize to UTC. All paths are relative.",
+      "descriptions": {
+        "list_fixture_files": "List available synthetic input files in fixtures; no host files are exposed.",
+        "read_records": "Read JSON input using a relative path, e.g. records.json; returns a records array.",
+        "normalize_filter_records": "Validate ALL records, normalize whitespace/case/money/timezones, then filter active rows >= min_cents (integer cents). Returns result and summary for write_outputs. Invalid input returns a stable error code.",
+        "write_outputs": "Write BOTH result.json and summary.json into this run's outputs directory. Pass the result and summary from normalize_filter_records; return output hashes."
+      }
+    }
+  },
+  "cases": [
+    {
+      "task_id": "task-01",
+      "family": "threshold",
+      "material": "A",
+      "trial": 1,
+      "passed": false,
+      "kind": "artifact",
+      "reason": "output_mismatch",
+      "cost_upper_cny": 0.014382
+    },
+    {
+      "task_id": "task-01",
+      "family": "threshold",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.016058
+    },
+    {
+      "task_id": "task-02",
+      "family": "threshold",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.01383
+    },
+    {
+      "task_id": "task-02",
+      "family": "threshold",
+      "material": "A",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012574
+    },
+    {
+      "task_id": "task-03",
+      "family": "whitespace",
+      "material": "A",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.013126
+    },
+    {
+      "task_id": "task-03",
+      "family": "whitespace",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.015246
+    },
+    {
+      "task_id": "task-04",
+      "family": "whitespace",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014678
+    },
+    {
+      "task_id": "task-04",
+      "family": "whitespace",
+      "material": "A",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.01282
+    },
+    {
+      "task_id": "task-05",
+      "family": "currency",
+      "material": "A",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.013036
+    },
+    {
+      "task_id": "task-05",
+      "family": "currency",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014922
+    },
+    {
+      "task_id": "task-06",
+      "family": "currency",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.016234
+    },
+    {
+      "task_id": "task-06",
+      "family": "currency",
+      "material": "A",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014482
+    },
+    {
+      "task_id": "task-07",
+      "family": "timezone",
+      "material": "A",
+      "trial": 1,
+      "passed": false,
+      "kind": "artifact",
+      "reason": "output_mismatch",
+      "cost_upper_cny": 0.011772
+    },
+    {
+      "task_id": "task-07",
+      "family": "timezone",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012602
+    },
+    {
+      "task_id": "task-08",
+      "family": "timezone",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014686
+    },
+    {
+      "task_id": "task-08",
+      "family": "timezone",
+      "material": "A",
+      "trial": 1,
+      "passed": false,
+      "kind": "artifact",
+      "reason": "output_mismatch",
+      "cost_upper_cny": 0.013292
+    },
+    {
+      "task_id": "task-09",
+      "family": "empty",
+      "material": "A",
+      "trial": 1,
+      "passed": false,
+      "kind": "artifact",
+      "reason": "output_mismatch",
+      "cost_upper_cny": 0.010934
+    },
+    {
+      "task_id": "task-09",
+      "family": "empty",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.01249
+    },
+    {
+      "task_id": "task-10",
+      "family": "empty",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.01214
+    },
+    {
+      "task_id": "task-10",
+      "family": "empty",
+      "material": "A",
+      "trial": 1,
+      "passed": false,
+      "kind": "artifact",
+      "reason": "output_mismatch",
+      "cost_upper_cny": 0.011104
+    },
+    {
+      "task_id": "task-11",
+      "family": "invalid",
+      "material": "A",
+      "trial": 1,
+      "passed": false,
+      "kind": "correct_rejection",
+      "reason": "rejection_mismatch",
+      "cost_upper_cny": 0.013192
+    },
+    {
+      "task_id": "task-11",
+      "family": "invalid",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "correct_rejection",
+      "reason": "expected_error_observed",
+      "cost_upper_cny": 0.010156
+    },
+    {
+      "task_id": "task-12",
+      "family": "invalid",
+      "material": "B",
+      "trial": 1,
+      "passed": true,
+      "kind": "correct_rejection",
+      "reason": "expected_error_observed",
+      "cost_upper_cny": 0.009554
+    },
+    {
+      "task_id": "task-12",
+      "family": "invalid",
+      "material": "A",
+      "trial": 1,
+      "passed": false,
+      "kind": "correct_rejection",
+      "reason": "rejection_mismatch",
+      "cost_upper_cny": 0.011618
+    },
+    {
+      "task_id": "task-01",
+      "family": "threshold",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.015528
+    },
+    {
+      "task_id": "task-01",
+      "family": "threshold",
+      "material": "A",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014136
+    },
+    {
+      "task_id": "task-02",
+      "family": "threshold",
+      "material": "A",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012574
+    },
+    {
+      "task_id": "task-02",
+      "family": "threshold",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.013942
+    },
+    {
+      "task_id": "task-03",
+      "family": "whitespace",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.015278
+    },
+    {
+      "task_id": "task-03",
+      "family": "whitespace",
+      "material": "A",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.013166
+    },
+    {
+      "task_id": "task-04",
+      "family": "whitespace",
+      "material": "A",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012628
+    },
+    {
+      "task_id": "task-04",
+      "family": "whitespace",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014268
+    },
+    {
+      "task_id": "task-05",
+      "family": "currency",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014448
+    },
+    {
+      "task_id": "task-05",
+      "family": "currency",
+      "material": "A",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.013036
+    },
+    {
+      "task_id": "task-06",
+      "family": "currency",
+      "material": "A",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014186
+    },
+    {
+      "task_id": "task-06",
+      "family": "currency",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.016428
+    },
+    {
+      "task_id": "task-07",
+      "family": "timezone",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012584
+    },
+    {
+      "task_id": "task-07",
+      "family": "timezone",
+      "material": "A",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.01139
+    },
+    {
+      "task_id": "task-08",
+      "family": "timezone",
+      "material": "A",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.01305
+    },
+    {
+      "task_id": "task-08",
+      "family": "timezone",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.01496
+    },
+    {
+      "task_id": "task-09",
+      "family": "empty",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012442
+    },
+    {
+      "task_id": "task-09",
+      "family": "empty",
+      "material": "A",
+      "trial": 2,
+      "passed": false,
+      "kind": "artifact",
+      "reason": "output_mismatch",
+      "cost_upper_cny": 0.010724
+    },
+    {
+      "task_id": "task-10",
+      "family": "empty",
+      "material": "A",
+      "trial": 2,
+      "passed": false,
+      "kind": "artifact",
+      "reason": "output_mismatch",
+      "cost_upper_cny": 0.010612
+    },
+    {
+      "task_id": "task-10",
+      "family": "empty",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012344
+    },
+    {
+      "task_id": "task-11",
+      "family": "invalid",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "correct_rejection",
+      "reason": "expected_error_observed",
+      "cost_upper_cny": 0.009386
+    },
+    {
+      "task_id": "task-11",
+      "family": "invalid",
+      "material": "A",
+      "trial": 2,
+      "passed": false,
+      "kind": "correct_rejection",
+      "reason": "rejection_mismatch",
+      "cost_upper_cny": 0.013086
+    },
+    {
+      "task_id": "task-12",
+      "family": "invalid",
+      "material": "A",
+      "trial": 2,
+      "passed": false,
+      "kind": "correct_rejection",
+      "reason": "rejection_mismatch",
+      "cost_upper_cny": 0.011872
+    },
+    {
+      "task_id": "task-12",
+      "family": "invalid",
+      "material": "B",
+      "trial": 2,
+      "passed": true,
+      "kind": "correct_rejection",
+      "reason": "expected_error_observed",
+      "cost_upper_cny": 0.04887
+    },
+    {
+      "task_id": "task-01",
+      "family": "threshold",
+      "material": "A",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014204
+    },
+    {
+      "task_id": "task-01",
+      "family": "threshold",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.015312
+    },
+    {
+      "task_id": "task-02",
+      "family": "threshold",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014132
+    },
+    {
+      "task_id": "task-02",
+      "family": "threshold",
+      "material": "A",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012574
+    },
+    {
+      "task_id": "task-03",
+      "family": "whitespace",
+      "material": "A",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.013142
+    },
+    {
+      "task_id": "task-03",
+      "family": "whitespace",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.015278
+    },
+    {
+      "task_id": "task-04",
+      "family": "whitespace",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.01439
+    },
+    {
+      "task_id": "task-04",
+      "family": "whitespace",
+      "material": "A",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.01282
+    },
+    {
+      "task_id": "task-05",
+      "family": "currency",
+      "material": "A",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012876
+    },
+    {
+      "task_id": "task-05",
+      "family": "currency",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014848
+    },
+    {
+      "task_id": "task-06",
+      "family": "currency",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.017012
+    },
+    {
+      "task_id": "task-06",
+      "family": "currency",
+      "material": "A",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014186
+    },
+    {
+      "task_id": "task-07",
+      "family": "timezone",
+      "material": "A",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.011422
+    },
+    {
+      "task_id": "task-07",
+      "family": "timezone",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012584
+    },
+    {
+      "task_id": "task-08",
+      "family": "timezone",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.014672
+    },
+    {
+      "task_id": "task-08",
+      "family": "timezone",
+      "material": "A",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.01341
+    },
+    {
+      "task_id": "task-09",
+      "family": "empty",
+      "material": "A",
+      "trial": 3,
+      "passed": false,
+      "kind": "artifact",
+      "reason": "output_mismatch",
+      "cost_upper_cny": 0.010718
+    },
+    {
+      "task_id": "task-09",
+      "family": "empty",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012498
+    },
+    {
+      "task_id": "task-10",
+      "family": "empty",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "artifact",
+      "reason": "matched",
+      "cost_upper_cny": 0.012344
+    },
+    {
+      "task_id": "task-10",
+      "family": "empty",
+      "material": "A",
+      "trial": 3,
+      "passed": false,
+      "kind": "artifact",
+      "reason": "output_mismatch",
+      "cost_upper_cny": 0.010822
+    },
+    {
+      "task_id": "task-11",
+      "family": "invalid",
+      "material": "A",
+      "trial": 3,
+      "passed": false,
+      "kind": "correct_rejection",
+      "reason": "rejection_mismatch",
+      "cost_upper_cny": 0.013198
+    },
+    {
+      "task_id": "task-11",
+      "family": "invalid",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "correct_rejection",
+      "reason": "expected_error_observed",
+      "cost_upper_cny": 0.009386
+    },
+    {
+      "task_id": "task-12",
+      "family": "invalid",
+      "material": "B",
+      "trial": 3,
+      "passed": true,
+      "kind": "correct_rejection",
+      "reason": "expected_error_observed",
+      "cost_upper_cny": 0.009182
+    },
+    {
+      "task_id": "task-12",
+      "family": "invalid",
+      "material": "A",
+      "trial": 3,
+      "passed": false,
+      "kind": "correct_rejection",
+      "reason": "rejection_mismatch",
+      "cost_upper_cny": 0.011774
+    }
+  ],
+  "limitations": "One model, synthetic records, correlated repeats and bundled guide/description changes. This is a recorded explorer, with no live inference or unique-user claim."
+}

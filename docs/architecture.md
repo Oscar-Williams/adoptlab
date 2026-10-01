@@ -45,3 +45,13 @@ The Langfuse integration scopes one trace to one task. Individual generations an
 ## Compatibility
 
 Locally exercised: Python 3.11.16, MCP Python SDK 1.30.0 (supported v1 line), FastAPI 0.142.2, Windows, installed Edge, DeepSeek Flash. The v1 SDK is pinned for stable MCPMark-compatible interfaces; migration to v2 requires transport/schema regression tests. Linux and cloud GPUs have not been validated. CPU handles file/HTTP/SQL/oracle workloads; external API infrastructure performs inference.
+
+## v0.2 execution and evidence
+
+External task packages select a locally registered pinned stdio container profile. The agent sees public instructions and allowlisted tools; independent rules and optional trusted extensions remain outside the MCP process. Profiles expose only read-only input and writable output mounts with disabled networking. The built-in records adapter remains supported.
+
+Database schema v2 adds immutable registry entries, material lineage and owner records; migration saves a SQLite backup. Saved experiment limits and prices drive execution. Backend, verifier, catalogue, task, material, tool-schema and model-configuration fingerprints are distinct. Unknown model responders remain labeled and terminal failures retain their denominator. Known model or execution-condition changes suppress aggregates.
+
+Run history and feedback handoff restore context across refreshes. Revisions require successful terminal acceptance, a changed material hash and comparable same-task conditions. Operator reconciliation only releases a run whose recorded process is dead. No paid request is replayed automatically.
+
+[Task package contract](mcp-task-packages.md) · [Validation](v02-validation.md) · [Decisions](v02-decisions.md).

@@ -6,6 +6,12 @@
 
 The first task reads synthetic records, normalizes integer money and timezone-aware dates, writes JSON outputs and checks them with an independently implemented oracle. Four restricted tools run through a real stdio MCP connection. Maintainers can create immutable guide/description versions while preserving the backend and tool schemas.
 
+## v0.2 local workspace
+
+Register pinned offline MCP containers, import immutable task contracts, inspect run history, compare material lineage and export a safe problem package. The official Filesystem example adds a second task contract beyond the built-in records workflow. [Task-package tutorial](docs/mcp-task-packages.md) · [v0.2 decisions](docs/v02-decisions.md) · [v0.2 validation](docs/v02-validation.md).
+
+The public bundle now includes a local-only revision walkthrough based on saved evidence. The currently deployed website remains on its published version until the next release.
+
 ## Published evidence
 
 [Open the bilingual explorer](https://adoptlab.lukewilliams.top) · [Pages mirror](https://adoptlab.pages.dev). Inspect the frozen 72-episode matrix, filter task families and download the reviewed report. The full execution workspace runs locally.
@@ -34,7 +40,7 @@ Material comparison includes separately labeled execution cohorts and custom ver
 
 ## Real model runs
 
-Copy `.env.example` to an ignored `.env`, or use a private configuration outside the repository. Set `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL=deepseek-flash` and current conservative CNY input/output prices per million tokens. Check [DeepSeek pricing](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/) before running. Credentials are never placed in experiment JSON.
+Copy `.env.example` to an ignored `.env`, or use a private configuration outside the repository. Set `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL=deepseek-flash` and verify the conservative CNY prices recorded in the experiment configuration. Local price environment variables are retained for compatibility; frozen experiment prices control reservation and costing. Check [DeepSeek pricing](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/) before running. Credentials are never placed in experiment JSON.
 
 ```powershell
 adoptlab run --config examples/probe.json
@@ -43,11 +49,20 @@ adoptlab compare --experiment <experiment-id>
 adoptlab verify --run <run-id>
 ```
 
-Each episode has eight model requests including retries, 1,024 output tokens per request and a 180-second deadline. A shared SQLite ledger reserves the worst-case request cost before sending. Unknown network outcomes keep their reservation. Reports use a conservative cost upper bound; provider invoice charges may be lower. The initial integration supports DeepSeek Flash only.
+Default episode limits are eight model requests including retries, 1,024 output tokens per request, 8,192 output tokens total and a 180-second deadline. Experiment settings can reduce these bounds. Saved configuration controls actual execution. A shared SQLite ledger reserves the worst-case request cost before sending. Unknown network outcomes keep their reservation. Reports use a conservative cost upper bound; provider invoice charges may be lower. The initial integration supports DeepSeek Flash only.
+
+## Run the new factorial
+
+```powershell
+python scripts/run_v02_matrix.py
+python scripts/analyze_v02.py
+```
+
+This freezes a guide × tool-description factorial with 48 protocol checks and 144 model trials. It retains task-family holdouts, original failures and uncertain request reservations. It requires configured model credentials and uses the existing shared budget ledger.
 
 ## What has been measured
 
-The first frozen matrix contains twelve synthetic tasks, two material versions and three trials: A passed 21/36, B passed 36/36. Normal outputs and correct input rejection are reported separately. Protocol checks passed 24/24. [The report](docs/experiment-results.md) documents task families, failures, costs, correlated repeats and small-sample limits. It supports this material comparison under these conditions. Real developer adoption and market demand remain to be validated.
+The v0.2 factorial contains 48 protocol checks (48 passed) and 144 model episodes: AA 23/36, AB 35/36, BA 36/36, BB 36/36. One pre-response failure retains an unknown responder and remains in the denominator. [Experiment results](docs/experiment-results.md) describe task-family holdouts, conservative costs and exploratory contrasts. [Historical v0.1 evidence](docs/experiment-results-v1.md) remains available. [Review and iteration](docs/review-results.md) separates Codex simulations from observed participants. Real developer adoption remains unmeasured.
 
 ## Integrate with evaluation tools
 
@@ -71,3 +86,5 @@ MIT for original AdoptLab code. External projects retain their own licenses. See
 ## Publication preview
 
 The [static explorer](public-site/) browses allowlisted saved results without a backend, uploads or inference calls. `python scripts/build_static_site.py` builds the complete committed site into `dist` without local runtime data or third-party dependencies. [Cloudflare Pages Git integration](docs/deployment.md) automatically publishes this directory on updates. The local exporter `scripts/build_public_site.py` prepares evidence for review before updating committed assets. Keep the execution service local until authentication, isolation and resource governance have been implemented for remote use.
+
+[Evidence index](docs/evidence-index.md) connects product decisions, original mechanisms, experiments, review changes and release checks.

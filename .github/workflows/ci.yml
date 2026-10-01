@@ -16,3 +16,20 @@ jobs:
           ADOPTLAB_RUNTIME: '${{ runner.temp }}/adoptlab'
       - run: python scripts/check_public_tree.py
       - run: python scripts/build_static_site.py
+  container-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest -q
+        env:
+          ADOPTLAB_RUNTIME: '${{ runner.temp }}/adoptlab'
+      - run: python scripts/prepare_filesystem.py
+        env:
+          ADOPTLAB_RUNTIME: '${{ runner.temp }}/adoptlab'
+      - run: python scripts/verify_filesystem.py --protocol-only
+        env:
+          ADOPTLAB_RUNTIME: '${{ runner.temp }}/adoptlab'

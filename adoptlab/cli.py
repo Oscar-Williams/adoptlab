@@ -11,6 +11,11 @@ def main():
     parser=argparse.ArgumentParser(description='AdoptLab: verify first value and compare onboarding materials')
     subs=parser.add_subparsers(dest='command',required=True)
     subs.add_parser('doctor')
+    for command in ['register-profile','register-task','check-task']:
+        p=subs.add_parser(command);p.add_argument('--file',type=Path,required=True)
+    subs.add_parser('history')
+    plugin=subs.add_parser('register-verifier');plugin.add_argument('--id',required=True);plugin.add_argument('--file',type=Path,required=True)
+    reconcile=subs.add_parser('reconcile');reconcile.add_argument('--run',required=True)
     run=subs.add_parser('run');run.add_argument('--config',type=Path,required=True)
     compare=subs.add_parser('compare');compare.add_argument('--experiment',required=True)
     verify=subs.add_parser('verify');verify.add_argument('--run',required=True)
@@ -22,12 +27,21 @@ def main():
         uvicorn.run('adoptlab.web:app',host='127.0.0.1',port=args.port);return
     else:
         store=Store()
-        if args.command=='run':
+        if args.command=='register-verifier':out=store.register_verifier(args.id,args.file)
+        elif args.command in {'register-profile','register-task','check-task'}:
+            data=json.loads(args.file.read_text(encoding='utf-8'))
+            if args.command=='check-task':
+                from .packages import validate_task
+                validate_task(data);out={'valid':True,'task_id':data['id']}
+            else:out=store.register('profile' if args.command=='register-profile' else 'task',data)
+        elif args.command=='history':out=store.runs()
+        elif args.command=='reconcile':out=store.reconcile(args.run)
+        elif args.command=='run':
             config=json.loads(args.config.read_text(encoding='utf-8'))
-            allowed={'title','mode','tasks','materials','trials','experiment_id'}
+            allowed={'title','mode','tasks','materials','trials','experiment_id','settings'}
             if set(config)-allowed:raise ValueError('UNKNOWN_CONFIG_FIELD')
             if config.get('trials',1) not in range(1,4):raise ValueError('INVALID_TRIALS')
-            exp=config.get('experiment_id') or store.experiment(config.get('title','Onboarding comparison'))
+            exp=config.get('experiment_id') or store.experiment(config.get('title','Onboarding comparison'),config.get('settings'))
             tasks=config.get('tasks',list(catalog())); variants=config.get('materials',['A','B'])
             # Alternating order controls fixed position effects, all trials remain correlated.
             for trial in range(1,config.get('trials',1)+1):
@@ -41,7 +55,7 @@ def main():
             out=store.export(exp)
             (store.root/(exp+'.report.json')).write_text(json.dumps(out,indent=2),encoding='utf-8')
         elif args.command=='compare':out=store.comparison(args.experiment)
-        else:out=reverify(store,args.run)
+        else:out=reverify(store,args.run,extensions=True)
     print(json.dumps(out,ensure_ascii=False,indent=2))
 
 if __name__=='__main__':main()

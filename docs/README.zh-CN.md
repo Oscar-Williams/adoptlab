@@ -1,5 +1,14 @@
 # AdoptLab
 
+## v0.2 本地工作台
+
+通过 CLI 登记固定的离线 MCP 容器，导入不可变任务契约，再使用运行历史、材料差异、反馈交接和脱敏问题包完成修订闭环。官方 Filesystem 示例覆盖文档查找与证据提取，内置记录任务保持兼容。
+
+[任务包与容器教程](mcp-task-packages.md) · [新增机制与取舍](v02-decisions.md) · [本轮验证记录](v02-validation.md)。公开发布包新增基于保存结果的修订体验；线上网站待下一轮发布更新。
+
+指南与工具描述的四组合实验使用 48 次无模型基线和 144 次真实模型执行，冻结任务族和保留集。执行 `python scripts/run_v02_matrix.py` 与 `python scripts/analyze_v02.py` 可生成可复查结果。实验保存的限制与定价控制实际运行；未知网络结果保留费用预留。
+
+
 比较界面按执行来源分别显示自动实验、本地浏览器与观察记录，支持自定义材料版本；验收摘要解释有效输出和正确拒绝。撤回后继续操作使用新匿名会话。
 
 公开展示可使用 public-site 的保存结果浏览器：在本地具有冻结实验时运行 `python scripts/build_public_site.py`，导出独立白名单发布目录。页面不提供实时推理、上传或执行 API；当前完整工作台继续运行于本地。
@@ -62,3 +71,7 @@ python scripts/langfuse_audit.py
 Windows、Python 3.11、现有 Edge、真实 stdio MCP、DeepSeek 和 Langfuse SDK 已本地验证。托管多人执行、任意外部工具、多模型兼容与真人试用结果按后续证据扩展。
 
 AdoptLab 原创代码使用 MIT，外部项目保留各自许可。参见 [LICENSE](../LICENSE)、[贡献指南](../CONTRIBUTING.md)、[更新记录](../CHANGELOG.md)。
+
+## v0.2 发布证据
+
+48 次协议检查全部通过；144 次模型执行按 AA、AB、BA、BB 分别通过 23/36、35/36、36/36、36/36。报告保留模型响应前失败与不确定费用。公开页面提供执行类型、任务划分、材料和证据分组筛选，历史 v0.1 报告继续保留。查看[实验报告](experiment-results.md)和[评审与迭代记录](review-results.md)。八组角色评审由 Codex 模拟，真实参与人数为零。
