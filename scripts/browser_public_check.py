@@ -13,7 +13,15 @@ def main():
         browser=p.chromium.launch(channel='msedge')
         page=browser.new_page(viewport={'width':1440,'height':1000})
         page.on('pageerror',lambda e:errors.append(str(e)))
-        page.goto(url);expect(page.locator('#summary')).to_contain_text('model: 130/144')
+        response=page.goto(url);expect(page.locator('#summary')).to_contain_text('model: 130/144')
+        if url.startswith('https://'):
+            headers=response.all_headers()
+            assert "default-src 'self'" in headers['content-security-policy']
+            assert headers['x-content-type-options']=='nosniff'
+            checks.append('hosted security response headers')
+        assets=page.evaluate("async()=>{const files=['report.json','report-v1.json','tutorial.md','experiment-results.md','experiment-results-v1.md','competitive.md','v02-validation.md','review-results.md','LICENSE.txt'];return await Promise.all(files.map(async name=>{const r=await fetch(name);return {name,status:r.status,bytes:(await r.text()).length}}))}")
+        assert all(a['status']==200 and a['bytes']>0 for a in assets)
+        checks.append('all report/document/license downloads available')
         page.locator('#mode').select_option('protocol');expect(page.locator('#summary')).to_contain_text('protocol: 48/48')
         page.locator('#mode').select_option('model');page.locator('#material').select_option('AA')
         expect(page.locator('#summary')).to_contain_text('model: 23/36')
@@ -27,7 +35,7 @@ def main():
         page.locator('#version').select_option('report-v1.json');expect(page.locator('#summary')).to_contain_text('model: 57/72')
         expect(page.locator('#demo-next')).to_be_disabled();checks.append('historical v1 retained without unsupported pairing')
         page.locator('#version').select_option('report.json');expect(page.locator('#summary')).to_contain_text('model: 130/144')
-        original=page.request.get(url.rstrip('/')+'/report.json').json()
+        original=page.evaluate("async()=>await (await fetch('report.json')).json()")
         for scenario in ['mismatch','unknown']:
             modified=json.loads(json.dumps(original))
             for i,row in enumerate(modified['cases']):

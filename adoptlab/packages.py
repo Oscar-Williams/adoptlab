@@ -77,6 +77,19 @@ def container_args(profile,root,name):
             '--mount',f'type=bind,src={(root/"outputs").resolve()},dst=/output',
             profile['image'],*profile['argv']]
 
+def prepare_container_mounts(root):
+    """Keep the host run private while allowing UID 65534 in its output bind."""
+    import os
+    if os.name!='posix':return
+    # The private ancestor blocks other host users; sticky output permits only
+    # the isolated container to create artifacts without root/chown privileges.
+    root.chmod(0o700)
+    (root/'outputs').chmod(0o1777)
+    (root/'fixtures').chmod(0o755)
+    for path in (root/'fixtures').rglob('*'):
+        if path.is_symlink():raise ValueError('FIXTURE_LINK_DENIED')
+        path.chmod(0o755 if path.is_dir() else 0o444)
+
 def verify_rules(task,root):
     checks=[];artifacts={}
     for rule in task['rules']:

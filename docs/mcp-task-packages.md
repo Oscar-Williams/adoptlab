@@ -48,3 +48,7 @@ Reference the registered ID with `verifier` in a task package. Both declarative 
 Comparison checks execution conditions within each mode. Mixed backends, model configurations, verifier versions or tool schemas suppress aggregate verdicts. Material revisions link feedback to a successful same-task run with changed material and matching conditions.
 
 Problem packages contain reviewed run metadata, hashes, independent verdicts and metered costs. Fixtures, local identities, feedback text and raw conversations remain private.
+
+## Linux bind permissions
+
+Containers run as UID/GID 65534. Linux run ancestors are owner-only (0700); the dedicated output bind uses sticky permissions (1777) to permit nonroot container writes, and synthetic fixtures are readable through a read-only mount. This avoids requiring privileged containers or changing host ownership. Windows Docker Desktop handles mount permissions separately. Linux CI verifies the protocol result and isolation checks.

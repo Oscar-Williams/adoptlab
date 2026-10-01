@@ -30,7 +30,7 @@ def validate_report(report):
     for row in report['cases']:
         if set(row)-allowed or type(row.get('passed')) is not bool or type(row.get('cost_upper_cny')) not in (int,float) or not math.isfinite(row['cost_upper_cny']) or row['cost_upper_cny']<0:raise ValueError('INVALID_PUBLIC_CASE')
         if not all(isinstance(row.get(k),str) for k in ['task_id','family','kind','reason']) or type(row.get('trial')) is not int or row['trial']<1:raise ValueError('INVALID_PUBLIC_CASE')
-        if report['schema'].endswith('v2') and (row.get('mode') not in {'protocol','model'} or row.get('status') not in {'succeeded','failed','cancelled','uncertain'} or not re.fullmatch('[a-f0-9]{64}',row.get('condition',''))):raise ValueError('INVALID_PUBLIC_CONDITION')
+        if report['schema'].endswith('v2') and (row.get('mode') not in {'protocol','model'} or row.get('status') not in {'succeeded','failed','cancelled','uncertain','budget_exhausted','timed_out','interrupted'} or not re.fullmatch('[a-f0-9]{64}',row.get('condition',''))):raise ValueError('INVALID_PUBLIC_CONDITION')
         if row.get('material') not in report['materials']:raise ValueError('UNKNOWN_MATERIAL')
     for material in report['materials'].values():
         if set(material)!={'guide','descriptions'}:raise ValueError('INVALID_PUBLIC_MATERIAL')

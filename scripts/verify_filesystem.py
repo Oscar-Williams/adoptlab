@@ -8,7 +8,7 @@ from mcp import ClientSession,StdioServerParameters
 from mcp.client.stdio import stdio_client
 from adoptlab.store import Store
 from adoptlab.engine import execute,reverify
-from adoptlab.packages import container_args,docker_command
+from adoptlab.packages import container_args,docker_command,prepare_container_mounts
 
 async def main():
     parser=argparse.ArgumentParser();parser.add_argument('--reuse-run');parser.add_argument('--protocol-only',action='store_true');args=parser.parse_args()
@@ -26,6 +26,7 @@ async def main():
     checks.append({'check':'independent_reverify','passed':reverify(s,r['id'])['verification']['passed']})
     root=s.root/'filesystem-isolation';(root/'fixtures').mkdir(parents=True,exist_ok=True);(root/'outputs').mkdir(exist_ok=True)
     (root/'fixtures'/'guide.txt').write_text('Synthetic readonly fixture',encoding='utf-8')
+    prepare_container_mounts(root)
     name='adoptlab-isolation-check'
     try:
         async with asyncio.timeout(40):

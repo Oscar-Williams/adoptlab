@@ -27,4 +27,4 @@ Independent maintainers and developers have not been recruited for this revision
 
 ## This release review
 
-Eight Codex-simulated role probes passed; three feedback/material/reverification loops passed. Real participants and sessions remain zero. The local suite passed 39 tests with one Windows symlink-permission skip. Public browser checks cover separated denominators, version switching, matching conditions/responders, failed reload and Chinese mobile layout. Hosted CI and deployment results must be checked against the actual release commit.
+Eight Codex-simulated role probes passed; three feedback/material/reverification loops passed. Real participants and sessions remain zero. The local suite passed 39 tests with two Windows skips (symlink privilege and Linux-only bind permissions). Public browser checks cover separated denominators, version switching, matching conditions/responders, failed reload and Chinese mobile layout. Hosted CI and deployment results must be checked against the actual release commit.

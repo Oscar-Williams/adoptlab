@@ -8,6 +8,17 @@ from adoptlab.engine import execute,decode
 from adoptlab.packages import validate_profile,validate_task,container_args,verify_rules,safe_path
 
 IMAGE='sha256:'+'a'*64
+
+def test_linux_bind_permissions_keep_host_ancestor_private(tmp_path):
+    import os,stat
+    if os.name!='posix':pytest.skip('Linux bind permission check')
+    from adoptlab.packages import prepare_container_mounts
+    (tmp_path/'outputs').mkdir();(tmp_path/'fixtures').mkdir()
+    file=tmp_path/'fixtures'/'guide.txt';file.write_text('synthetic')
+    prepare_container_mounts(tmp_path)
+    assert stat.S_IMODE(tmp_path.stat().st_mode)==0o700
+    assert stat.S_IMODE((tmp_path/'outputs').stat().st_mode)==0o1777
+    assert stat.S_IMODE(file.stat().st_mode)==0o444
 def profile():return {'id':'filesystem-v1','image':IMAGE,'version':'test-pin','argv':['/input','/output'],'tools':['read_text_file','write_file']}
 def task():return json.loads((Path(__file__).parents[1]/'examples/filesystem-task.json').read_text())
 

@@ -11,7 +11,7 @@ from .config import CODE, load_credentials, digest
 from .contract import verify
 from .store import Store, uid
 from .tasks import catalog, MATERIALS, public_task
-from .packages import safe_path,container_args,readiness,verify_rules,verify_task,docker_command
+from .packages import safe_path,container_args,readiness,verify_rules,verify_task,docker_command,prepare_container_mounts
 EXECUTOR_HASH=digest((CODE/'adoptlab'/'engine.py').read_text(encoding='utf-8'))
 
 class StopRun(Exception):pass
@@ -51,6 +51,7 @@ async def execute(store:Store,id:str,recorder=None):
     if generic:
         for name,text in task.get('fixtures',{}).items():
             path=safe_path(root/'fixtures',name);path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text,encoding='utf-8')
+        prepare_container_mounts(root)
     else:(root/'fixtures'/'records.json').write_text(json.dumps(task['records']),encoding='utf-8')
     # Verification inputs are never supplied to the MCP process.
     errors=[];trace=[];requests=0;cost=0;start=time.monotonic();code=None

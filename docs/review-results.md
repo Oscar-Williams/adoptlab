@@ -44,3 +44,7 @@ Engineering: task contract → execution → independent acceptance → failure 
 Product iteration: role-based review → explicit concern → prioritized change → regression acceptance. This is a simulated/internal product loop.
 
 External validation remains open: voluntary recruitment → actual workflow observation → supported issue → revision → observed follow-up. Keep this stage pending until records exist. A future resume may cite implemented mechanisms, model experiments and engineering results; observed adoption and time improvements require human evidence.
+
+## Hosted integration follow-up
+
+The first Linux CI attempt built the container successfully but failed output acceptance because its nonroot user could not write the host-owned output bind. The correction keeps the host run ancestor private and permits writes only through its dedicated sticky output directory; container network, root filesystem and input restrictions remain in force. The release requires a successful Linux protocol/isolation retest. Hosted browser checks fetch reports within the browser to use the same network path as the site.
