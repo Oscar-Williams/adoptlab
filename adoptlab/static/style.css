@@ -2,3 +2,5 @@
 
 .intro{padding:24px 0}.intro h1{font-size:32px;line-height:1.2;letter-spacing:-.035em}.intro .lead{font-size:16px}.intro .workflow{margin:0}
 .table-scroll{overflow:auto;max-width:100%;margin-top:18px}table{border-collapse:collapse;font-size:12px;width:100%}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line)}#verdict{color:var(--accent)}.evidence{min-width:0}
+
+.history-row{display:flex;gap:.7rem;margin:.5rem 0;flex-wrap:wrap}.history-row button:first-child{flex:1;text-align:left}#history-list{max-height:24rem;overflow:auto}pre{overflow-wrap:anywhere;max-width:100%}select,textarea,input{max-width:100%}.readiness pre{max-height:16rem;overflow:auto}@media(max-width:700px){.history-row{display:block}.history-row button{width:100%;margin:.3rem 0}}

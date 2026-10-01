@@ -22,7 +22,7 @@ python scripts/build_static_site.py
 python -m http.server 8769 --bind 127.0.0.1 --directory dist
 ```
 
-The build verifies its file allowlist, credential/private-path patterns and the frozen v1 episode counts. A new experiment version should update these explicit assertions alongside the evidence review. The source repository's local credential configuration remains outside the repository. Set no DeepSeek or Langfuse key in Cloudflare Pages.
+The build verifies its file allowlist, credential/private-path patterns and the versioned report schema, finite cost values and case conditions. Review a new experiment version together with its narrative and archive. The source repository's local credential configuration remains outside the repository. Set no DeepSeek or Langfuse key in Cloudflare Pages.
 
 The live Python/MCP service remains local. Remote execution requires authentication, per-user isolation, queue/resource controls and separate security validation before publication.
 

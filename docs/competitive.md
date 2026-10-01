@@ -54,3 +54,7 @@ Official pages rechecked 2026-09-30; USD figures below concern platform plans, s
 | Script + spreadsheet / AdoptLab | Local reference workflow and original MIT code, with no product subscription; model execution is separately metered. | Setup and maintenance effort are real adoption costs. Human preparation time and willingness to pay require observation, beyond low inference expense. |
 
 For a small team, a free entry alone does not settle the choice. Existing test infrastructure favors Promptfoo, shared trace inspection favors Langfuse, and published documentation favors Mintlify. AdoptLab needs maintainer evidence that its compact revision workflow saves enough preparation or handoff effort to justify another local tool.
+
+## v0.2 workflow decision
+
+The local product now connects material lineage, fixed task acceptance, metered MCP execution and feedback-linked re-verification. This is a workflow choice for small maintainers who need to decide which onboarding change to make. Existing evaluation and tracing tools remain useful for broader evaluation and observability. v0.2 does not claim that competitors lack these primitives; the contribution is the integrated task-and-revision contract with inspectable provenance. Independent maintainer interviews remain necessary to validate preparation cost and adoption barriers.

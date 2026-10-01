@@ -31,7 +31,7 @@ Withdrawing a browser's adoption records removes linked events/feedback and anon
 
 ## Read results and choose the next step
 
-The [first model experiment](experiment-results.md) has 72 episodes with a single model and six synthetic task families. The paired materials change both guide and descriptions. Additional task families, separate wording ablations and observed developer integration are useful next checks.
+The [v0.2 model experiment](experiment-results.md) separates guide and description changes across four combinations. The public explorer defaults to model runs and offers separate protocol, cohort and task-split filters. Its walkthrough compares saved runs with matching task, trial, execution fingerprints and known responder. The historical v0.1 report remains downloadable. Independent developer integration remains an external validation task.
 
 If your team already uses [Promptfoo or Langfuse](competitive.md), evaluate whether an AdoptLab template or adapter fits the existing process. The standalone workspace adds an integrated feedback-to-revision path while keeping a deliberately small task catalog.
 
@@ -44,3 +44,7 @@ If your team already uses [Promptfoo or Langfuse](competitive.md), evaluate whet
 5. Export a report and show the limits: local operation, synthetic tasks, one model and pending human trials.
 
 Use real saved results when recording. Label protocol demonstrations and automated runs. Request permission before recording participants or publishing their comments.
+
+## External Filesystem task
+
+See [MCP task packages](mcp-task-packages.md) to build the pinned offline container and register its task. Container integration is optional for the built-in records quick start. Run adoptlab doctor to check Docker readiness. No model key is needed for python scripts/verify_filesystem.py --protocol-only.

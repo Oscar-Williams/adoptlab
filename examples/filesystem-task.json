@@ -1,0 +1,18 @@
+{
+  "id": "docs-evidence-01",
+  "family": "document-evidence",
+  "split": "exploration",
+  "profile": "filesystem-v1",
+  "instruction": "Read /input/guide.txt. Extract the exact retry limit and endpoint. Write /output/evidence.json as an object with retry_limit (integer), endpoint and citation (the source filename). Only read /input and write /output. Use write_file to save JSON.",
+  "fixtures": {"guide.txt": "API onboarding reference v1\nEndpoint: /v1/records\nRetry limit: 2\nA retry is permitted only for an idempotent operation.\n"},
+  "steps": [
+    {"tool": "read_text_file", "arguments": {"path": "/input/guide.txt"}},
+    {"tool": "write_file", "arguments": {"path": "/output/evidence.json", "content": "{\"retry_limit\":2,\"endpoint\":\"/v1/records\",\"citation\":\"guide.txt\"}"}}
+  ],
+  "rules": [
+    {"file": "evidence.json", "op": "type", "type": "dict"},
+    {"file": "evidence.json", "op": "equals", "path": ["retry_limit"], "expected": 2},
+    {"file": "evidence.json", "op": "equals", "path": ["endpoint"], "expected": "/v1/records"},
+    {"file": "evidence.json", "op": "equals", "path": ["citation"], "expected": "guide.txt"}
+  ]
+}
