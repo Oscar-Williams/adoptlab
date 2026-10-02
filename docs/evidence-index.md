@@ -15,3 +15,13 @@ AdoptLab's maintainer task is to determine which onboarding material helps a def
 Original AdoptLab contributions cover the product workflow, records MCP tools, acceptance contracts, material lineage, execution budget/state governance, public evidence explorer and reviewed adaptations. Upstream roles and licenses are retained in NOTICE and the pinned integration documentation. Codex assists implementation, debugging, documentation and simulated review; automated and simulated execution are separately labeled.
 
 A supported project account follows: onboarding problem → contract and execution boundary → competing workflow comparison → product choice → implementation → measured task evidence → reviewed obstacle → revision and retest → published version. The next external milestone is actual maintainer observation and independent developer use. Record consent, task/version, outcome, assistance and revision follow-up before claiming human adoption, time saved or growth.
+
+
+## v0.3 first-success product iteration
+
+- Baseline scope and acceptance: [English PRD](product-prd.md), [中文 PRD](product-prd.zh-CN.md).
+- Measured product alternatives: [native Promptfoo, Langfuse SDK/GUI and manual baseline](competitive.md#v03-direct-experience--2026-10-02).
+- Unified issue/decision/retest chain: [v0.3 validation](v03-validation.md).
+- Developer delivery: `first-task`, target-aware doctor, four-step bilingual page, safe artifact verification and exact-run feedback handoff.
+- Reliability: Windows dead-process recovery, asynchronous task/material consistency and safe missing-artifact errors.
+- Historical experiment claims remain 48 protocol/144 model episodes. Eight v0.3 role walkthroughs are simulated execution; real external adoption remains unmeasured.

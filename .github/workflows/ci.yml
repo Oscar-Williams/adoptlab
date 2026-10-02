@@ -11,6 +11,12 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -e ".[dev,competitive]"
+      - run: adoptlab doctor --target builtin
+        env:
+          ADOPTLAB_RUNTIME: '${{ runner.temp }}/first-task-smoke'
+      - run: adoptlab first-task
+        env:
+          ADOPTLAB_RUNTIME: '${{ runner.temp }}/first-task-smoke'
       - run: python -m pytest -q
         env:
           ADOPTLAB_RUNTIME: '${{ runner.temp }}/adoptlab'
@@ -24,6 +30,12 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -e ".[dev]"
+      - run: adoptlab doctor --target builtin
+        env:
+          ADOPTLAB_RUNTIME: '${{ runner.temp }}/first-task-smoke'
+      - run: adoptlab first-task
+        env:
+          ADOPTLAB_RUNTIME: '${{ runner.temp }}/first-task-smoke'
       - run: python -m pytest -q
         env:
           ADOPTLAB_RUNTIME: '${{ runner.temp }}/adoptlab'

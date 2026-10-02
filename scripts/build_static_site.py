@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-FILES={'index.html','site.css','site.js','_headers','report.json','report-v1.json','tutorial.md','experiment-results.md','experiment-results-v1.md','competitive.md','v02-validation.md','review-results.md','LICENSE.txt'}
+FILES={'index.html','site.css','site.js','_headers','report.json','report-v1.json','tutorial.md','experiment-results.md','experiment-results-v1.md','competitive.md','v02-validation.md','review-results.md','LICENSE.txt','product-prd.md','product-prd.zh-CN.md','v03-validation.md'}
 
 def main():
     source=ROOT/'public-site';destination=ROOT/'dist'

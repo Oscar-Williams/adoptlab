@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 · 2026-10-02
+
+- Add a one-task CLI with saved independent verification and actionable exit status.
+- Add target-specific readiness and a bilingual four-step developer entry.
+- Restore the exact run and feedback when handing off to the maintainer.
+- Fix Windows reconciliation for terminated processes with retained handles.
+- Add native MCP competitor probes, product PRD, unified review/retest records and refreshed public instructions.
+
 ## 0.2.0 · 2026-10-01
 
 - Register immutable offline MCP container profiles and independently verified task packages.

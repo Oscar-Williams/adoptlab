@@ -1,10 +1,10 @@
 # AdoptLab
 
-## v0.2 本地工作台
+## v0.3 首次成功体验与本地工作台
 
 通过 CLI 登记固定的离线 MCP 容器，导入不可变任务契约，再使用运行历史、材料差异、反馈交接和脱敏问题包完成修订闭环。官方 Filesystem 示例覆盖文档查找与证据提取，内置记录任务保持兼容。
 
-[任务包与容器教程](mcp-task-packages.md) · [新增机制与取舍](v02-decisions.md) · [本轮验证记录](v02-validation.md)。公开发布包新增基于保存结果的修订体验；线上网站待下一轮发布更新。
+[任务包与容器教程](mcp-task-packages.md) · [新增机制与取舍](v02-decisions.md) · [本轮验证记录](v02-validation.md)。公开发布包新增基于保存结果的修订体验；公开页面提供保存证据的演示，本地安装提供真实执行。
 
 指南与工具描述的四组合实验使用 48 次无模型基线和 144 次真实模型执行，冻结任务族和保留集。执行 `python scripts/run_v02_matrix.py` 与 `python scripts/analyze_v02.py` 可生成可复查结果。实验保存的限制与定价控制实际运行；未知网络结果保留费用预留。
 
@@ -15,26 +15,31 @@
 
 [English](../README.md) · [架构与取舍](architecture.md) · [实测报告](experiment-results.md) · [竞品工作流](competitive.md)
 
-**比较接入材料，验证首次任务，将反馈关联到经过验收的修订。** AdoptLab 面向维护文档、示例和工具描述的小型 API/MCP 团队。
+**比较接入材料，验证首次任务，将反馈关联到经过验收的修订。** AdoptLab 面向维护文档、示例和工具描述的小型 MCP 工具团队。
 
 首个任务读取合成记录，规范化整数金额与带时区日期，输出 JSON，再由独立实现的验证器检查。四个受限工具通过真实 stdio MCP 执行。维护者可创建不可变的接入指南与工具描述版本，保持后端和参数结构一致。
 
 ## 在线实验入口
 
-[双语结果浏览器](https://adoptlab.lukewilliams.top) · [Pages 备用入口](https://adoptlab.pages.dev)。可查看 72 次冻结实验、筛选任务族并下载已审核报告。完整执行工作台在本地运行。
+[双语结果浏览器](https://adoptlab.lukewilliams.top) · [Pages 备用入口](https://adoptlab.pages.dev)。可查看 v0.2 的 48 次协议执行和 144 次模型实验，以及 v0.1 的 72 次历史实验、筛选任务族并下载已审核报告。完整执行工作台在本地运行。
+
+[产品基线 PRD](product-prd.zh-CN.md) · [v0.3 验证](v03-validation.md)。开发者入口按环境检查、单任务执行、验收与反馈组织；维护者继续管理完整实验与修订。
 
 ## 开始使用
 
 在独立 Python 3.11 环境中，从项目目录执行：
 
 ```powershell
-python -m pip install -e ".[dev,competitive]"
-adoptlab doctor
-adoptlab run --config examples/protocol.json
+python -m venv F:\Dev\adoptlab-env
+F:\Dev\adoptlab-env\Scripts\Activate.ps1
+python -m pip install -e .
+$env:ADOPTLAB_RUNTIME = "F:\Dev\adoptlab-runtime"
+adoptlab doctor --target builtin
+adoptlab first-task
 adoptlab serve
 ```
 
-打开 `http://127.0.0.1:8766`，导航支持中英文切换。协议模式使用真实工具和确定性参考流程，不产生模型费用。
+将运行目录示例替换为你在数据盘上的可写目录。打开 `http://127.0.0.1:8766/?view=developer`，导航支持中英文切换。协议模式使用真实工具和确定性参考流程，不产生模型费用。
 
 创建实验，分别执行 A/B；查看验收与独立复验；保存反馈，创建材料修订版本；用同一任务检查修订，再关联新旧结果并导出报告。页面代运行属于本地演示，独立开发者接入和受观察试用采用单独的证据口径。
 

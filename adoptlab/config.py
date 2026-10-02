@@ -15,11 +15,43 @@ def load_credentials():
 def digest(value):
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
-def doctor():
+def doctor(target=None, runtime=RUNTIME):
     load_credentials()
     import sys
     import importlib.metadata
     from .packages import readiness
+    if target is not None:
+        if target not in {'builtin','filesystem','model'}:raise ValueError('UNKNOWN_DOCTOR_TARGET')
+        import tempfile
+        versions={}
+        for package in ['mcp','fastapi','httpx','jinja2','uvicorn','python-dotenv']:
+            try:versions[package]=importlib.metadata.version(package)
+            except importlib.metadata.PackageNotFoundError:versions[package]=None
+        try:
+            runtime.mkdir(parents=True,exist_ok=True)
+            with tempfile.TemporaryFile(dir=runtime) as probe:probe.write(b'readiness')
+            writable=True
+        except OSError:writable=False
+        checks=[{'id':'python','required':True,'passed':sys.version_info>=(3,11),'action':'Use Python 3.11 or newer.'},
+                {'id':'dependencies','required':True,'passed':all(versions.values()),'action':'Run python -m pip install -e . in the project environment.'},
+                {'id':'runtime','required':True,'passed':writable,'action':'Set ADOPTLAB_RUNTIME to a writable directory on your data drive, then restart AdoptLab.'},
+                {'id':'isolated_environment','required':False,'passed':sys.prefix!=sys.base_prefix or (Path(sys.prefix)/'conda-meta').exists(),'action':'Use a separate Conda or venv environment for AdoptLab.'}]
+        if target=='filesystem':
+            checks.append({'id':'docker','required':True,'passed':readiness()['ready'],'action':'Start Linux Docker, then register the pinned Filesystem profile and task using the task-package tutorial.'})
+            import sqlite3
+            registered=False
+            if (runtime/'adoptlab.db').exists():
+                try:
+                    with sqlite3.connect((runtime/'adoptlab.db').as_uri()+'?mode=ro',uri=True) as c:
+                        registered=c.execute("SELECT COUNT(*) FROM registry WHERE (kind='profile' AND id='filesystem-v1') OR (kind='task' AND id='docs-evidence-01')").fetchone()[0]==2
+                except sqlite3.Error:pass
+            checks.append({'id':'filesystem_registration','required':True,'passed':registered,'action':'Run python scripts/prepare_filesystem.py to prepare and register the pinned example.'})
+        if target=='model':
+            checks.extend([{'id':'model_key','required':True,'passed':bool(os.getenv('DEEPSEEK_API_KEY')),'action':'Configure DEEPSEEK_API_KEY in your private local .env.'},
+                           {'id':'model_support','required':True,'passed':os.getenv('DEEPSEEK_MODEL','deepseek-flash')=='deepseek-flash','action':'Use the supported deepseek-flash model and verify frozen experiment pricing.'}])
+        return {'target':target,'ready':all(c['passed'] for c in checks if c['required']),'python':sys.version.split()[0],
+                'checks':checks,'dependencies':versions,'gpu_required':False,
+                'optional_capabilities':{'docker':'Required for external container tasks.','model':'Private credentials required for paid inference.','langfuse':'Optional tracing; first-task runs locally without cloud submission.'}}
     return {"python": sys.version.split()[0], "isolated": sys.prefix != sys.base_prefix or (Path(sys.prefix)/"conda-meta").exists(),
             "external_mcp":readiness(),
             "dependencies": {p: importlib.metadata.version(p) for p in ["mcp", "fastapi", "httpx"]},

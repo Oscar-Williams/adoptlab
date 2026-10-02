@@ -9,13 +9,18 @@ from adoptlab.tracing import scrub
 
 def main():
     load_credentials();env=os.environ.copy()
+    # Node proxy handling differs from the SDK. This readback uses TLS directly.
+    for key in list(env):
+        if 'PROXY' in key.upper():env.pop(key)
     env['LANGFUSE_HOST']=env['LANGFUSE_BASE_URL']
     env['npm_config_cache']=str(RUNTIME.parent/'cache'/'npm')
     trace=json.loads((RUNTIME/'last-langfuse-trace.json').read_text(encoding='utf-8'))
     npx=shutil.which('npx.cmd') or shutil.which('npx')
     if not npx:raise SystemExit('npx is required for official Langfuse CLI readback.')
     args=[npx,'--yes','langfuse-cli','api','observations','list','--trace-id',trace['trace_id'],'--limit','50','--fields','core,basic,io,metadata,model,usage,trace_context','--json']
-    r=subprocess.run(args,env=env,capture_output=True,text=True,encoding='utf-8',timeout=60)
+    try:r=subprocess.run(args,env=env,capture_output=True,text=True,encoding='utf-8',timeout=45)
+    except subprocess.TimeoutExpired:
+        print(json.dumps({'status':'readback_timeout','notice':'Private project data retained; retry after checking network access.'}));return
     if r.returncode:
         print(json.dumps({'status':'readback_failed','error':scrub(r.stderr)[-400:]}));return
     try:data=json.loads(r.stdout)

@@ -279,11 +279,18 @@ class Store:
         alive=True
         if os.name=='nt':
             import ctypes
+            from ctypes import wintypes
             kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+            kernel.OpenProcess.argtypes=[wintypes.DWORD,wintypes.BOOL,wintypes.DWORD]
             kernel.OpenProcess.restype=ctypes.c_void_p
             kernel.CloseHandle.argtypes=[ctypes.c_void_p]
+            kernel.GetExitCodeProcess.argtypes=[ctypes.c_void_p,ctypes.POINTER(wintypes.DWORD)]
             handle=kernel.OpenProcess(0x1000,False,owner['pid'])
-            if handle:kernel.CloseHandle(handle)
+            if handle:
+                try:
+                    code=wintypes.DWORD()
+                    if kernel.GetExitCodeProcess(handle,ctypes.byref(code)) and code.value!=259:alive=False
+                finally:kernel.CloseHandle(handle)
             elif ctypes.get_last_error()==87:alive=False
         else:
             try:os.kill(owner['pid'],0)

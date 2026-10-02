@@ -8,12 +8,15 @@ Create an independent Python 3.11 environment, install the package, and check it
 
 ```powershell
 python -m pip install -e .
-adoptlab doctor
-adoptlab run --config examples/protocol.json
+$env:ADOPTLAB_RUNTIME = "F:\Dev\adoptlab-runtime"
+adoptlab doctor --target builtin
+adoptlab first-task
 adoptlab serve
 ```
 
-Open the local address printed by the server. Create an experiment. Choose a material version and a task, then run it in protocol mode. This mode uses a deterministic reference workflow through the real MCP connection. The independent verifier checks money, dates, filtering and both output files.
+Choose your own writable data-drive directory instead of the example path. On Linux use `export ADOPTLAB_RUNTIME=/path/to/adoptlab-runtime`. Open `http://127.0.0.1:8766/?view=developer` for the four-step path: check environment, run one task, independently verify and submit linked feedback. The CLI stores exactly one protocol run and a verification summary. Docker, API credentials and Langfuse are optional for this task.
+
+Open the maintainer workspace to create an experiment. Choose a material version and a task, then run it in protocol mode. This mode uses a deterministic reference workflow through the real MCP connection. The independent verifier checks money, dates, filtering and both output files.
 
 Inspect the run status and verification reason. Use **Re-verify** to check the stored artifacts. A verified rejection is a valid result for intentionally invalid input; ordinary tasks need valid outputs.
 

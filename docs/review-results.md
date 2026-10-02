@@ -48,3 +48,8 @@ External validation remains open: voluntary recruitment → actual workflow obse
 ## Hosted integration follow-up
 
 The first Linux CI attempt built the container successfully but failed output acceptance because its nonroot user could not write the host-owned output bind. The correction keeps the host run ancestor private and permits writes only through its dedicated sticky output directory; container network, root filesystem and input restrictions remain in force. The release requires a successful Linux protocol/isolation retest. Hosted browser checks fetch reports within the browser to use the same network path as the site.
+
+
+## v0.3 review and revision
+
+Eight role walkthroughs completed through the implemented developer and maintainer UI. Three material-revision loops and actual official Filesystem execution passed. Findings, changes and rechecks are consolidated in [v0.3 validation](v03-validation.md). Source metadata identifies Codex simulation; external human participants remain zero.
