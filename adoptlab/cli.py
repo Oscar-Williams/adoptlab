@@ -10,7 +10,8 @@ from .tasks import catalog
 def main():
     parser=argparse.ArgumentParser(description='AdoptLab: verify first value and compare onboarding materials')
     subs=parser.add_subparsers(dest='command',required=True)
-    subs.add_parser('doctor')
+    check=subs.add_parser('doctor');check.add_argument('--target',choices=['builtin','filesystem','model'])
+    subs.add_parser('first-task')
     for command in ['register-profile','register-task','check-task']:
         p=subs.add_parser(command);p.add_argument('--file',type=Path,required=True)
     subs.add_parser('history')
@@ -21,13 +22,22 @@ def main():
     verify=subs.add_parser('verify');verify.add_argument('--run',required=True)
     serve=subs.add_parser('serve');serve.add_argument('--port',type=int,default=8766)
     args=parser.parse_args()
-    if args.command=='doctor':out=doctor()
+    if args.command=='doctor':out=doctor(args.target)
     elif args.command=='serve':
         import uvicorn
         uvicorn.run('adoptlab.web:app',host='127.0.0.1',port=args.port);return
     else:
-        store=Store()
-        if args.command=='register-verifier':out=store.register_verifier(args.id,args.file)
+        try:store=Store()
+        except OSError:
+            if args.command!='first-task':raise
+            print(json.dumps({'passed':False,'error':'RUNTIME_UNWRITABLE','next_action':'Set ADOPTLAB_RUNTIME to a writable directory on your data drive, then start again.'}))
+            raise SystemExit(1)
+        if args.command=='first-task':
+            from .onboarding import first_task
+            out=asyncio.run(first_task(store))
+            print(json.dumps(out,ensure_ascii=False,indent=2))
+            raise SystemExit(0 if out['passed'] else 1)
+        elif args.command=='register-verifier':out=store.register_verifier(args.id,args.file)
         elif args.command in {'register-profile','register-task','check-task'}:
             data=json.loads(args.file.read_text(encoding='utf-8'))
             if args.command=='check-task':
@@ -55,7 +65,13 @@ def main():
             out=store.export(exp)
             (store.root/(exp+'.report.json')).write_text(json.dumps(out,indent=2),encoding='utf-8')
         elif args.command=='compare':out=store.comparison(args.experiment)
-        else:out=reverify(store,args.run,extensions=True)
+        else:
+            if not (store.root/'runs'/args.run/'manifest.json').is_file():
+                store.get_run(args.run)
+                print(json.dumps({'error':'ARTIFACTS_UNAVAILABLE','next_action':'Inspect the terminal status and start a new run explicitly after resolving the issue.'}))
+                raise SystemExit(1)
+            out=reverify(store,args.run,extensions=True)
     print(json.dumps(out,ensure_ascii=False,indent=2))
+    if args.command=='doctor' and args.target and not out['ready']:raise SystemExit(1)
 
 if __name__=='__main__':main()

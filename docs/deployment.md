@@ -29,3 +29,8 @@ The live Python/MCP service remains local. Remote execution requires authenticat
 Published endpoints: [custom domain](https://adoptlab.lukewilliams.top), [Pages mirror](https://adoptlab.pages.dev), [source](https://github.com/Oscar-Williams/adoptlab).
 
 References checked 2026-10-01: [build image and dependency installation](https://developers.cloudflare.com/pages/configuration/build-image/), [Git integration](https://developers.cloudflare.com/pages/get-started/git-integration/), [custom domains](https://developers.cloudflare.com/pages/configuration/custom-domains/).
+
+
+## v0.3 publication boundary
+
+The 16-file allowlist includes English/Chinese product PRDs and the v0.3 observation/retest ledger. The footer records the product version; the preserved experiment selector retains the v0.2 matrix and v0.1 archive. Before merging, inspect the Pages preview using `scripts/browser_public_check.py` and confirm its security headers, downloads, condition-matched comparisons and bilingual mobile layout. Run this acceptance again against the production custom domain after automatic deployment.

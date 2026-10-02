@@ -20,7 +20,7 @@ The records task has explicit input fields, integer cents, separate currency tot
 
 ## ADR 002 · Materials are immutable, capabilities are fixed
 
-A/B and custom revisions share tool names, schemas and implementation. A new material stores guide, descriptions and a content hash without replacing earlier versions. Run provenance references its material hash; a feedback revision requires a verified new run on the same task. The experiment changes the combined guide/description bundle. Separating their individual effects is a future ablation.
+A/B and custom revisions share tool names, schemas and implementation. A new material stores guide, descriptions and a content hash without replacing earlier versions. Run provenance references its material hash; a feedback revision requires a verified new run on the same task. The experiment changes the combined guide/description bundle. The frozen v0.2 guide × tool-description factorial separates the two dimensions under fixed conditions; its small task-family catalog supports exploratory conclusions.
 
 ## ADR 003 · Conservative budget reservations
 
@@ -44,7 +44,7 @@ The Langfuse integration scopes one trace to one task. Individual generations an
 
 ## Compatibility
 
-Locally exercised: Python 3.11.16, MCP Python SDK 1.30.0 (supported v1 line), FastAPI 0.142.2, Windows, installed Edge, DeepSeek Flash. The v1 SDK is pinned for stable MCPMark-compatible interfaces; migration to v2 requires transport/schema regression tests. Linux and cloud GPUs have not been validated. CPU handles file/HTTP/SQL/oracle workloads; external API infrastructure performs inference.
+Locally exercised: Python 3.11.16, MCP Python SDK 1.30.0 (supported v1 line), FastAPI 0.142.2, Windows, installed Edge, DeepSeek Flash. The v1 SDK is pinned for stable MCPMark-compatible interfaces; migration to v2 requires transport/schema regression tests. Linux installation and container integration are verified in CI. Cloud GPUs remain untested. CPU handles file/HTTP/SQL/oracle workloads; external API infrastructure performs inference.
 
 ## v0.2 execution and evidence
 
@@ -55,3 +55,9 @@ Database schema v2 adds immutable registry entries, material lineage and owner r
 Run history and feedback handoff restore context across refreshes. Revisions require successful terminal acceptance, a changed material hash and comparable same-task conditions. Operator reconciliation only releases a run whose recorded process is dead. No paid request is replayed automatically.
 
 [Task package contract](mcp-task-packages.md) · [Validation](v02-validation.md) · [Decisions](v02-decisions.md).
+
+## ADR 008 · A bounded first task, full maintainer workflow
+
+The v0.3 developer entry uses one task-01/B/protocol execution through existing run APIs. CLI first-task stores one report and independently re-verifies artifacts, task and manifest integrity. Target readiness separates required execution prerequisites from optional integrations; HTTP responses omit private paths. The maintainer deep link restores the exact run and feedback. No database migration or execution/oracle replacement is needed.
+
+Windows reconciliation checks GetExitCodeProcess: an exited process may retain an open handle. Active or inaccessible owners remain blocked. Unresolved charges are preserved after interruption.

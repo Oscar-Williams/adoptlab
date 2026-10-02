@@ -19,7 +19,9 @@ def main():
             assert "default-src 'self'" in headers['content-security-policy']
             assert headers['x-content-type-options']=='nosniff'
             checks.append('hosted security response headers')
-        assets=page.evaluate("async()=>{const files=['report.json','report-v1.json','tutorial.md','experiment-results.md','experiment-results-v1.md','competitive.md','v02-validation.md','review-results.md','LICENSE.txt'];return await Promise.all(files.map(async name=>{const r=await fetch(name);return {name,status:r.status,bytes:(await r.text()).length}}))}")
+        assert 'v0.3.0' in page.locator('footer').inner_text()
+        checks.append('v0.3 product documentation and version')
+        assets=page.evaluate("async()=>{const files=['report.json','report-v1.json','tutorial.md','experiment-results.md','experiment-results-v1.md','competitive.md','v02-validation.md','review-results.md','LICENSE.txt','product-prd.md','product-prd.zh-CN.md','v03-validation.md'];return await Promise.all(files.map(async name=>{const r=await fetch(name);return {name,status:r.status,bytes:(await r.text()).length}}))}")
         assert all(a['status']==200 and a['bytes']>0 for a in assets)
         checks.append('all report/document/license downloads available')
         page.locator('#mode').select_option('protocol');expect(page.locator('#summary')).to_contain_text('protocol: 48/48')

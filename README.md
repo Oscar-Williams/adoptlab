@@ -2,32 +2,37 @@
 
 [中文](docs/README.zh-CN.md) · [Architecture](docs/architecture.md) · [Measured results](docs/experiment-results.md) · [Competitive workflow](docs/competitive.md)
 
-**Compare onboarding materials, verify a developer task, and link feedback to a tested revision.** AdoptLab is a local workspace for small API/MCP teams maintaining their documentation, examples and tool descriptions.
+**Compare onboarding materials, verify a developer task, and link feedback to a tested revision.** AdoptLab is a local workspace for small MCP tool teams maintaining their documentation, examples and tool descriptions.
 
 The first task reads synthetic records, normalizes integer money and timezone-aware dates, writes JSON outputs and checks them with an independently implemented oracle. Four restricted tools run through a real stdio MCP connection. Maintainers can create immutable guide/description versions while preserving the backend and tool schemas.
 
-## v0.2 local workspace
+## v0.3 first-success workspace
 
 Register pinned offline MCP containers, import immutable task contracts, inspect run history, compare material lineage and export a safe problem package. The official Filesystem example adds a second task contract beyond the built-in records workflow. [Task-package tutorial](docs/mcp-task-packages.md) · [v0.2 decisions](docs/v02-decisions.md) · [v0.2 validation](docs/v02-validation.md).
 
-The public bundle now includes a local-only revision walkthrough based on saved evidence. The currently deployed website remains on its published version until the next release.
+The developer entry follows environment check → one task → independent acceptance → linked feedback. `adoptlab first-task` runs one CPU protocol task and saves its verification report. [Product PRD](docs/product-prd.md) · [v0.3 validation](docs/v03-validation.md). The public site provides a saved-evidence walkthrough; local installation enables execution.
 
 ## Published evidence
 
-[Open the bilingual explorer](https://adoptlab.lukewilliams.top) · [Pages mirror](https://adoptlab.pages.dev). Inspect the frozen 72-episode matrix, filter task families and download the reviewed report. The full execution workspace runs locally.
+[Open the bilingual explorer](https://adoptlab.lukewilliams.top) · [Pages mirror](https://adoptlab.pages.dev). Inspect the frozen v0.2 matrix: 48 protocol checks and 144 model episodes, with a historical 72-episode report, filter task families and download the reviewed report. The full execution workspace runs locally.
 
 ## Try it
 
-Use an independent Python 3.11 environment. From this directory:
+Use an independent Python 3.11 environment. Clone this repository onto your data drive, create/activate a Conda or venv environment, then run from this directory. The runtime path below is an example; choose your own writable directory. On Linux set `export ADOPTLAB_RUNTIME=/path/to/adoptlab-runtime`. Optional development/competitor dependencies are installed with `python -m pip install -e ".[dev,competitive]"`.
 
 ```powershell
-python -m pip install -e ".[dev,competitive]"
-adoptlab doctor
-adoptlab run --config examples/protocol.json
+python -m venv F:\Dev\adoptlab-env
+F:\Dev\adoptlab-env\Scripts\Activate.ps1
+python -m pip install -e .
+$env:ADOPTLAB_RUNTIME = "F:\Dev\adoptlab-runtime"
+adoptlab doctor --target builtin
+adoptlab first-task
 adoptlab serve
 ```
 
-Open `http://127.0.0.1:8766`. English is the default; the navigation switches to Chinese. Protocol mode uses real tools with a deterministic reference workflow and incurs no model fee.
+Open `http://127.0.0.1:8766/?view=developer`. English is the default; the navigation switches to Chinese. Protocol mode uses real tools with a deterministic reference workflow and incurs no model fee.
+
+Start with **Run first task** on the developer page. Re-verify its saved artifacts and submit feedback. Open the maintainer workspace for the full comparison/revision workflow:
 
 1. Create an experiment and run a task with A and B.
 2. Inspect verification and use **Re-verify** to check artifacts again.

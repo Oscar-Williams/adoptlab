@@ -23,7 +23,7 @@ async def lifespan(app):
     for worker in list(workers):worker.cancel()
     if workers:await asyncio.gather(*workers,return_exceptions=True)
 
-app=FastAPI(title='AdoptLab',version='0.2.0',lifespan=lifespan)
+app=FastAPI(title='AdoptLab',version='0.3.0',lifespan=lifespan)
 app.mount('/static',StaticFiles(directory=CODE/'adoptlab'/'static'),name='static')
 templates=Jinja2Templates(directory=CODE/'adoptlab'/'templates')
 @app.get('/favicon.ico',include_in_schema=False)
@@ -94,7 +94,7 @@ class BatchInput(Strict):
     trials:int=Field(default=1,ge=1,le=3)
 @app.get('/',response_class=HTMLResponse)
 async def home(request:Request,lang:Literal['en','zh']='en',view:Literal['maintainer','developer']='maintainer'):
-    return templates.TemplateResponse(request=request,name='index.html',context={'lang':lang,'view':view,'experiments':store.experiments(),'tasks':store.tasks(),'materials':{m['id']:m['content'] for m in store.materials()},'material_names':{m['id']:m['metadata']['name'] for m in store.materials()}})
+    return templates.TemplateResponse(request=request,name='developer.html' if view=='developer' else 'index.html',context={'lang':lang,'view':view,'experiments':store.experiments(),'tasks':store.tasks(),'materials':{m['id']:m['content'] for m in store.materials()},'material_names':{m['id']:m['metadata']['name'] for m in store.materials()}})
 @app.post('/api/experiments')
 async def experiment(data:ExperimentInput):return {'id':store.experiment(data.title,data.settings)}
 @app.get('/api/experiments')
@@ -112,9 +112,9 @@ async def materials():return store.materials()
 @app.post('/api/materials')
 async def material(data:MaterialInput):return store.add_material(data.guide,data.descriptions,data.name,data.parent,data.reason)
 @app.get('/api/doctor')
-async def check_environment():
+async def check_environment(target:Literal['builtin','filesystem','model']='builtin'):
     from .config import doctor
-    return await asyncio.to_thread(doctor)
+    return await asyncio.to_thread(doctor,target,store.root)
 @app.get('/api/profiles')
 async def profiles():return store.registered('profile')
 @app.get('/api/materials/{id}/diff')
@@ -162,12 +162,19 @@ async def queue(id:str,data:RunInput):
     return {'id':run,'cohort':'human_unverified','notice':'Local browser execution; independent human adoption requires an observed session or local integration evidence.'}
 @app.get('/api/runs/{id}')
 async def getrun(id):return {k:v for k,v in store.get_run(id).items() if k!='subject'}
+def require_artifacts(id):
+    store.get_run(id)
+    if not (store.root/'runs'/id/'manifest.json').is_file():raise ValueError('ARTIFACTS_UNAVAILABLE')
 @app.post('/api/runs/{id}/cancel')
 async def cancel(id):store.cancel(id);return {'cancel_requested':True}
 @app.get('/api/runs/{id}/verification')
-async def verification(id):return reverify(store,id)
+async def verification(id):
+    require_artifacts(id)
+    return reverify(store,id)
 @app.post('/api/runs/{id}/verification')
-async def explicit_verification(id):return await asyncio.to_thread(reverify,store,id,True)
+async def explicit_verification(id):
+    require_artifacts(id)
+    return await asyncio.to_thread(reverify,store,id,True)
 @app.get('/api/experiments/{id}/comparison')
 async def compare(id):store.get_experiment(id);return store.comparison(id)
 @app.get('/api/experiments/{id}/export')
