@@ -75,3 +75,19 @@ def test_gate_observation_and_tamper(tmp_path,monkeypatch):
         files[0].write_text('{}',encoding='utf-8')
         assert c.post('/api/releases',json=body).json()['verdict']=='failed'
         assert c.request('DELETE','/api/observations/'+first['id'],json={}).status_code==200
+
+
+def test_doctor_requires_image_for_a_profile_with_a_task(tmp_path,monkeypatch):
+    from adoptlab.config import doctor
+    import adoptlab.packages as packages
+    s=Store(tmp_path)
+    for name in ['filesystem-missing','filesystem-ready']:
+        s.register('profile',{'id':name,'image':'sha256:'+'a'*64,'version':'pin','argv':['/input','/output'],'tools':['read_text_file','write_file']})
+    task=json.loads((Path(__file__).parents[1]/'examples/filesystem-task.json').read_text())
+    task['profile']='filesystem-missing';s.register('task',task)
+    monkeypatch.setattr(packages,'readiness',lambda:{'ready':True})
+    monkeypatch.setattr(packages,'pinned_image_ready',lambda p:p['id']=='filesystem-ready')
+    result=doctor('filesystem',tmp_path)
+    assert next(c for c in result['checks'] if c['id']=='filesystem_registration')['passed']
+    assert not next(c for c in result['checks'] if c['id']=='pinned_image')['passed']
+    assert not result['ready']

@@ -45,7 +45,8 @@ def doctor(target=None, runtime=RUNTIME):
                     with sqlite3.connect((runtime/'adoptlab.db').as_uri()+'?mode=ro',uri=True) as c:
                         profiles=[json.loads(r[0]) for r in c.execute("SELECT content FROM registry WHERE kind='profile'") if {'read_text_file','write_file'}.issubset(json.loads(r[0]).get('tools',[]))]
                         task_profiles={json.loads(r[0]).get('profile') for r in c.execute("SELECT content FROM registry WHERE kind='task'")}
-                        registered=any(p['id'] in task_profiles for p in profiles)
+                        profiles=[p for p in profiles if p['id'] in task_profiles]
+                        registered=bool(profiles)
                 except sqlite3.Error:pass
             checks.append({'id':'filesystem_registration','required':True,'passed':registered,'action':'Register a pinned Filesystem profile and its matching task. Use new IDs when rebuilding an existing profile.'})
             from .packages import pinned_image_ready
