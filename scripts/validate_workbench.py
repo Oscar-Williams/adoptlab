@@ -23,7 +23,6 @@ async def main():
     task=json.loads((ROOT/'examples/filesystem-task.json').read_text())
     task.update(id='docs-evidence-'+suffix,profile=profile_id)
     config={**task,'id':'docs-config-'+suffix,'family':'document-config','instruction':'Read /input/config-guide.txt. Save endpoint, retry_limit and citation_line in /output/config.json. citation_line is the one-based line containing the endpoint.','fixtures':{'config-guide.txt':'Service reference\nEndpoint: /v2/search\nRetry limit: 3\n'},'steps':[{'tool':'read_text_file','arguments':{'path':'/input/config-guide.txt'}},{'tool':'write_file','arguments':{'path':'/output/config.json','content':'{"endpoint":"/v2/search","retry_limit":3,"citation_line":2}'}}],'rules':[{'file':'config.json','op':'equals','path':['endpoint'],'expected':'/v2/search'},{'file':'config.json','op':'equals','path':['retry_limit'],'expected':3},{'file':'config.json','op':'equals','path':['citation_line'],'expected':2}]}
-    (ROOT/'examples/document-config-task.json').write_text(json.dumps(config,indent=2)+'\n',encoding='utf-8')
     async with httpx.AsyncClient(base_url=BASE,timeout=240,trust_env=False) as c:
         async def post(path,data):
             r=await c.post(path,json=data);r.raise_for_status();return r.json()
@@ -54,7 +53,7 @@ async def main():
             assert gate['verdict']=='passed',gate
             cases.append({'task_id':tid,'old_run':runs[0]['id'],'new_run':runs[1]['id'],'revision':rev['id'],'release':gate,'scope':'protocol only'})
         report=(await c.get('/api/experiments/'+exp+'/export')).json()
-        (ROOT/'runtime/v04-validation.json').write_text(json.dumps({'experiment_id':exp,'cases':cases,'report':report},indent=2),encoding='utf-8')
+        (s.root/'v04-validation.json').write_text(json.dumps({'experiment_id':exp,'cases':cases,'report':report},indent=2),encoding='utf-8')
         sanitized={'schema':'adoptlab-upgrade-evidence-v1','mode':'protocol','human_sessions':0,'cases':[],'limitations':['Protocol checks do not establish model improvement or human adoption.','Historical experiment denominators remain in report.json.']}
         for case in cases:
             runs=[]
@@ -62,7 +61,7 @@ async def main():
                 r=s.get_run(rid);v=r['result'];p=v['provenance']
                 runs.append({'id':rid,'status':r['status'],'passed':v['verification']['passed'],'condition':s.condition(r),'task_hash':p['task_hash'],'material_hash':p['material_hash'],'artifact_hash':v['verification']['artifact_hash'],'mode':r['mode'],'cohort':r['cohort']})
             sanitized['cases'].append({'task_id':case['task_id'],'runs':runs,'release':{k:case['release'][k] for k in ['verdict','comparable']}})
-        (ROOT/'public-site/workbench-evidence.json').write_text(json.dumps(sanitized,indent=2)+'\n',encoding='utf-8')
+        (s.root/'workbench-evidence.json').write_text(json.dumps(sanitized,indent=2)+'\n',encoding='utf-8')
         print(json.dumps({'experiment_id':exp,'cases':len(cases),'accepted_runs':6,'mode':'protocol','human_sessions':0}))
 
 if __name__=='__main__':asyncio.run(main())
