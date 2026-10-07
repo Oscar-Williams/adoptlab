@@ -1,0 +1,51 @@
+{
+  "id": "docs-config-v04",
+  "family": "document-config",
+  "split": "exploration",
+  "profile": "filesystem-v04",
+  "instruction": "Read /input/config-guide.txt. Save endpoint, retry_limit and citation_line in /output/config.json. citation_line is the one-based line containing the endpoint.",
+  "fixtures": {
+    "config-guide.txt": "Service reference\nEndpoint: /v2/search\nRetry limit: 3\n"
+  },
+  "steps": [
+    {
+      "tool": "read_text_file",
+      "arguments": {
+        "path": "/input/config-guide.txt"
+      }
+    },
+    {
+      "tool": "write_file",
+      "arguments": {
+        "path": "/output/config.json",
+        "content": "{\"endpoint\":\"/v2/search\",\"retry_limit\":3,\"citation_line\":2}"
+      }
+    }
+  ],
+  "rules": [
+    {
+      "file": "config.json",
+      "op": "equals",
+      "path": [
+        "endpoint"
+      ],
+      "expected": "/v2/search"
+    },
+    {
+      "file": "config.json",
+      "op": "equals",
+      "path": [
+        "retry_limit"
+      ],
+      "expected": 3
+    },
+    {
+      "file": "config.json",
+      "op": "equals",
+      "path": [
+        "citation_line"
+      ],
+      "expected": 2
+    }
+  ]
+}

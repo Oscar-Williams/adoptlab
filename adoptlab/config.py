@@ -39,13 +39,17 @@ def doctor(target=None, runtime=RUNTIME):
         if target=='filesystem':
             checks.append({'id':'docker','required':True,'passed':readiness()['ready'],'action':'Start Linux Docker, then register the pinned Filesystem profile and task using the task-package tutorial.'})
             import sqlite3
-            registered=False
+            profiles=[];registered=False
             if (runtime/'adoptlab.db').exists():
                 try:
                     with sqlite3.connect((runtime/'adoptlab.db').as_uri()+'?mode=ro',uri=True) as c:
-                        registered=c.execute("SELECT COUNT(*) FROM registry WHERE (kind='profile' AND id='filesystem-v1') OR (kind='task' AND id='docs-evidence-01')").fetchone()[0]==2
+                        profiles=[json.loads(r[0]) for r in c.execute("SELECT content FROM registry WHERE kind='profile'") if {'read_text_file','write_file'}.issubset(json.loads(r[0]).get('tools',[]))]
+                        task_profiles={json.loads(r[0]).get('profile') for r in c.execute("SELECT content FROM registry WHERE kind='task'")}
+                        registered=any(p['id'] in task_profiles for p in profiles)
                 except sqlite3.Error:pass
-            checks.append({'id':'filesystem_registration','required':True,'passed':registered,'action':'Run python scripts/prepare_filesystem.py to prepare and register the pinned example.'})
+            checks.append({'id':'filesystem_registration','required':True,'passed':registered,'action':'Register a pinned Filesystem profile and its matching task. Use new IDs when rebuilding an existing profile.'})
+            from .packages import pinned_image_ready
+            checks.append({'id':'pinned_image','required':True,'passed':any(pinned_image_ready(p) for p in profiles),'action':'Prepare the pinned image locally; if rebuilding changes its digest, register a new profile and task version.'})
         if target=='model':
             checks.extend([{'id':'model_key','required':True,'passed':bool(os.getenv('DEEPSEEK_API_KEY')),'action':'Configure DEEPSEEK_API_KEY in your private local .env.'},
                            {'id':'model_support','required':True,'passed':os.getenv('DEEPSEEK_MODEL','deepseek-flash')=='deepseek-flash','action':'Use the supported deepseek-flash model and verify frozen experiment pricing.'}])

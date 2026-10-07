@@ -11,7 +11,7 @@ from .config import CODE, load_credentials, digest
 from .contract import verify
 from .store import Store, uid
 from .tasks import catalog, MATERIALS, public_task
-from .packages import safe_path,container_args,readiness,verify_rules,verify_task,docker_command,prepare_container_mounts
+from .packages import safe_path,container_args,readiness,verify_rules,verify_task,docker_command,prepare_container_mounts,pinned_image_ready
 EXECUTOR_HASH=digest((CODE/'adoptlab'/'engine.py').read_text(encoding='utf-8'))
 
 class StopRun(Exception):pass
@@ -76,6 +76,7 @@ async def execute(store:Store,id:str,recorder=None):
         if generic:
             check=readiness()
             if not check['ready']:raise StopRun(check['reason'])
+            if not await asyncio.to_thread(pinned_image_ready,profile):raise StopRun('PINNED_IMAGE_NOT_FOUND')
             params=StdioServerParameters(command=docker_command(),args=container_args(profile,root,'adoptlab-'+id),env=env)
         else:params=StdioServerParameters(command=sys.executable,args=['-m','adoptlab.server'],env=env)
         async with stdio_client(params) as streams:

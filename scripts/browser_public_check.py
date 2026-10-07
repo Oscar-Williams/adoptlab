@@ -13,7 +13,7 @@ def main():
         browser=p.chromium.launch(channel='msedge')
         page=browser.new_page(viewport={'width':1440,'height':1000})
         page.on('pageerror',lambda e:errors.append(str(e)))
-        response=page.goto(url);expect(page.locator('#summary')).to_contain_text('model: 130/144')
+        response=page.goto(url.rstrip('/')+'/experiments.html');expect(page.locator('#summary')).to_contain_text('model: 130/144')
         if url.startswith('https://'):
             headers=response.all_headers()
             assert "default-src 'self'" in headers['content-security-policy']

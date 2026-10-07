@@ -15,9 +15,11 @@ class Store:
         if self.db.exists():
             with self.connect() as source:
                 schema=source.execute('PRAGMA user_version').fetchone()[0]
-                if schema>2:raise ValueError('DATABASE_VERSION_TOO_NEW')
-                if schema < 2:
-                    with sqlite3.connect(root/'adoptlab.pre-v02.db') as backup:source.backup(backup)
+                if schema>3:raise ValueError('DATABASE_VERSION_TOO_NEW')
+                if schema < 3:
+                    backup_path=root/'adoptlab.pre-v04.db'
+                    if backup_path.exists():backup_path=root/('adoptlab.pre-v04.'+uid()+'.db')
+                    with sqlite3.connect(backup_path) as backup:source.backup(backup)
         with self.connect() as c:
             c.executescript('''
             BEGIN IMMEDIATE;
@@ -31,7 +33,9 @@ class Store:
             CREATE TABLE IF NOT EXISTS registry(kind TEXT, id TEXT, content TEXT, hash TEXT, PRIMARY KEY(kind,id));
             CREATE TABLE IF NOT EXISTS material_metadata(id TEXT PRIMARY KEY REFERENCES materials(id), name TEXT, parent TEXT, reason TEXT);
             CREATE TABLE IF NOT EXISTS owners(run_id TEXT PRIMARY KEY REFERENCES runs(id), pid INTEGER, created TEXT);
-            PRAGMA user_version=2;
+            CREATE TABLE IF NOT EXISTS release_checks(id TEXT PRIMARY KEY, created TEXT, content TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS observations(id TEXT PRIMARY KEY, participant TEXT NOT NULL, created TEXT, fingerprint TEXT UNIQUE NOT NULL, content TEXT NOT NULL);
+            PRAGMA user_version=3;
             COMMIT;
             ''')
             for key,value in MATERIALS.items():c.execute('INSERT OR IGNORE INTO materials VALUES(?,?,?,?)',(key,json.dumps(value),digest(value),now()))
@@ -200,6 +204,7 @@ class Store:
             c.execute('DELETE FROM revisions WHERE feedback_id IN (SELECT id FROM feedback WHERE run_id IN (SELECT id FROM runs WHERE subject=?))',(subject,))
             c.execute('DELETE FROM feedback WHERE run_id IN (SELECT id FROM runs WHERE subject=?)',(subject,))
             c.execute('DELETE FROM events WHERE subject=?',(subject,))
+            c.execute('DELETE FROM observations WHERE participant=?',(subject,))
             c.execute("UPDATE runs SET subject='withdrawn',cohort='withdrawn' WHERE subject=?",(subject,))
     def funnel(self):
         with self.connect() as c:
