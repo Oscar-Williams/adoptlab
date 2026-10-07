@@ -6,7 +6,13 @@
 
 The first task reads synthetic records, normalizes integer money and timezone-aware dates, writes JSON outputs and checks them with an independently implemented oracle. Four restricted tools run through a real stdio MCP connection. Maintainers can create immutable guide/description versions while preserving the backend and tool schemas.
 
-## v0.3 first-success workspace
+## v0.4 integration and revision workbench
+
+Chinese is the default at `/workspace`, with a complete English interface. Fourteen modules connect environment checks, task editing/preflight, experiments, run evidence, immutable materials, feedback/retests, release checks and anonymous observations. Protocol acceptance, model experiments and human observations stay separate. [v0.4 behavior and recovery](docs/workbench-v04.md) · [中文PRD](docs/workbench-prd.zh-CN.md) · [Validation](public-site/v04-validation.md) · [Trial and resume evidence](docs/trial-and-resume.zh-CN.md).
+
+Three independently accepted cases cover built-in records, the official pinned Filesystem server and document configuration extraction with exact fields and citation positions. Six saved baseline/revised protocol runs establish the workflow; they do not establish model improvements or user adoption. The public landing page offers bilingual interactive case walkthroughs and downloadable evidence. [Historical experiment explorer](https://adoptlab.lukewilliams.top/experiments.html) preserves the original reports and denominators.
+
+## Preserved v0.3 first-success entry
 
 Register pinned offline MCP containers, import immutable task contracts, inspect run history, compare material lineage and export a safe problem package. The official Filesystem example adds a second task contract beyond the built-in records workflow. [Task-package tutorial](docs/mcp-task-packages.md) · [v0.2 decisions](docs/v02-decisions.md) · [v0.2 validation](docs/v02-validation.md).
 
@@ -14,7 +20,7 @@ The developer entry follows environment check → one task → independent accep
 
 ## Published evidence
 
-[Open the bilingual explorer](https://adoptlab.lukewilliams.top) · [Pages mirror](https://adoptlab.pages.dev). Inspect the frozen v0.2 matrix: 48 protocol checks and 144 model episodes, with a historical 72-episode report, filter task families and download the reviewed report. The full execution workspace runs locally.
+[Open the bilingual cases](https://adoptlab.lukewilliams.top) · [Pages mirror](https://adoptlab.pages.dev) · [Historical explorer](https://adoptlab.lukewilliams.top/experiments.html). The frozen v0.2 matrix retains 48 protocol checks and 144 model episodes, with a historical 72-episode report. The full execution workspace runs locally.
 
 ## Try it
 
@@ -30,7 +36,7 @@ adoptlab first-task
 adoptlab serve
 ```
 
-Open `http://127.0.0.1:8766/?view=developer`. English is the default; the navigation switches to Chinese. Protocol mode uses real tools with a deterministic reference workflow and incurs no model fee.
+Open `http://127.0.0.1:8766/workspace#developer`. Chinese is the default; the language switch preserves the selected module. The prior developer entry remains at `/?view=developer`. Protocol mode uses real tools with a deterministic reference workflow and incurs no model fee.
 
 Start with **Run first task** on the developer page. Re-verify its saved artifacts and submit feedback. Open the maintainer workspace for the full comparison/revision workflow:
 

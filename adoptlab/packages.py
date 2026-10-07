@@ -59,6 +59,14 @@ def docker_command():
     load_credentials()
     return os.getenv('ADOPTLAB_DOCKER') or shutil.which('docker')
 
+def pinned_image_ready(profile):
+    command=docker_command()
+    if not command:return False
+    try:
+        result=subprocess.run([command,'image','inspect',profile['image']],capture_output=True,timeout=10)
+        return result.returncode==0
+    except (OSError,subprocess.TimeoutExpired):return False
+
 def readiness():
     command=docker_command()
     if not command:return {'ready':False,'reason':'DOCKER_NOT_INSTALLED'}

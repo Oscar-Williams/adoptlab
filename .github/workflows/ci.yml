@@ -45,3 +45,7 @@ jobs:
       - run: python scripts/verify_filesystem.py --protocol-only
         env:
           ADOPTLAB_RUNTIME: '${{ runner.temp }}/adoptlab'
+      - run: docker tag adoptlab-filesystem:v1 adoptlab-filesystem:v04
+      - run: python scripts/ci_workbench.py
+        env:
+          ADOPTLAB_RUNTIME: '${{ runner.temp }}/adoptlab'

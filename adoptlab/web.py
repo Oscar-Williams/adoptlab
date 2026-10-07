@@ -23,7 +23,7 @@ async def lifespan(app):
     for worker in list(workers):worker.cancel()
     if workers:await asyncio.gather(*workers,return_exceptions=True)
 
-app=FastAPI(title='AdoptLab',version='0.3.0',lifespan=lifespan)
+app=FastAPI(title='AdoptLab',version='0.4.0',lifespan=lifespan)
 app.mount('/static',StaticFiles(directory=CODE/'adoptlab'/'static'),name='static')
 templates=Jinja2Templates(directory=CODE/'adoptlab'/'templates')
 @app.get('/favicon.ico',include_in_schema=False)
@@ -43,6 +43,8 @@ async def boundary(request,call_next):
         body=await request.body()
         if len(body)>20000:return JSONResponse({'error':'BODY_TOO_LARGE'},status_code=413)
     response=await call_next(request)
+    if request.url.path.startswith('/api/'):
+        response.headers['Cache-Control']='no-store'
     response.headers['Content-Security-Policy']="default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'"
     response.headers['X-Content-Type-Options']='nosniff'
     return response
@@ -93,7 +95,8 @@ class BatchInput(Strict):
     mode:Literal['protocol','model']='protocol'
     trials:int=Field(default=1,ge=1,le=3)
 @app.get('/',response_class=HTMLResponse)
-async def home(request:Request,lang:Literal['en','zh']='en',view:Literal['maintainer','developer']='maintainer'):
+async def home(request:Request,lang:Literal['en','zh']='zh',view:Literal['maintainer','developer']='maintainer'):
+    if 'view' not in request.query_params:return templates.TemplateResponse(request=request,name='workspace.html',context={'lang':lang})
     return templates.TemplateResponse(request=request,name='developer.html' if view=='developer' else 'index.html',context={'lang':lang,'view':view,'experiments':store.experiments(),'tasks':store.tasks(),'materials':{m['id']:m['content'] for m in store.materials()},'material_names':{m['id']:m['metadata']['name'] for m in store.materials()}})
 @app.post('/api/experiments')
 async def experiment(data:ExperimentInput):return {'id':store.experiment(data.title,data.settings)}
@@ -144,7 +147,11 @@ async def batch(id:str,data:BatchInput):
     worker=asyncio.create_task(run_batch());workers.add(worker);worker.add_done_callback(workers.discard)
     return {'run_ids':ids,'cohort':'automation','notice':'Automated batch; independent observed use is counted separately.'}
 @app.post('/api/tasks/import')
-async def import_task(data:dict):return store.register('task',data)
+async def import_task(data:dict):
+    from .workbench import preflight
+    checked=preflight(data,store)
+    if not checked['valid']:return JSONResponse(checked,status_code=400)
+    return store.register('task',data)
 @app.get('/api/runs/{id}/problem-package')
 async def problem_package(id):
     r=store.get_run(id)
@@ -192,3 +199,12 @@ async def budget():return store.cost()
 @app.get('/api/funnel')
 async def funnel():
     return store.funnel()
+
+from .workbench import router as workbench_router
+app.include_router(workbench_router)
+
+@app.get("/workspace",response_class=HTMLResponse)
+async def workspace(request:Request,lang:Literal["zh","en"]="zh"):
+    return templates.TemplateResponse(request=request,name="workspace.html",context={"lang":lang})
+
+app.mount("/showcase",StaticFiles(directory=CODE/"public-site",html=True),name="showcase")

@@ -1,0 +1,104 @@
+{
+  "schema": "adoptlab-upgrade-evidence-v1",
+  "mode": "protocol",
+  "human_sessions": 0,
+  "cases": [
+    {
+      "task_id": "task-01",
+      "runs": [
+        {
+          "id": "76a01157d317400f88c9b4922c82278d",
+          "status": "succeeded",
+          "passed": true,
+          "condition": "bf448fce99003a7e0d26d7db25d5413870a0cd4f1cd5d85a61b5aaf99fcaf5bd",
+          "task_hash": "39957de5489ff9cb112e2906070bb208a1dd1e3b117a52fb13e9d9f07ad05517",
+          "material_hash": "e4b2e69ed7a29d8101a4d317cfe32ae39a08551b2f8eef9d85b0f254039de80a",
+          "artifact_hash": "14d83e4d3ab2976be0fe242231c7a62d55f06304dbbfa0948eae58d626586bf6",
+          "mode": "protocol",
+          "cohort": "automation"
+        },
+        {
+          "id": "c810b9c325984480a304a9225d35b740",
+          "status": "succeeded",
+          "passed": true,
+          "condition": "bf448fce99003a7e0d26d7db25d5413870a0cd4f1cd5d85a61b5aaf99fcaf5bd",
+          "task_hash": "39957de5489ff9cb112e2906070bb208a1dd1e3b117a52fb13e9d9f07ad05517",
+          "material_hash": "b6e1bbce5657f81dbe1f452f47418afdfabb49cb586bb2d958a6d9c246a6dbc2",
+          "artifact_hash": "14d83e4d3ab2976be0fe242231c7a62d55f06304dbbfa0948eae58d626586bf6",
+          "mode": "protocol",
+          "cohort": "automation"
+        }
+      ],
+      "release": {
+        "verdict": "passed",
+        "comparable": true
+      }
+    },
+    {
+      "task_id": "docs-evidence-v04",
+      "runs": [
+        {
+          "id": "54bf7f0e8c0a49f697ce4f8aaa5ed1f3",
+          "status": "succeeded",
+          "passed": true,
+          "condition": "6edb10d88c30ca178513d5b1bcdbf2f3bc12d159e9393e5ff628b58a28e8f4da",
+          "task_hash": "d7e0fe65169ab44c36230b804bebc35364a6af4aaa1f16e09927ae0c68521010",
+          "material_hash": "d47ce0934c5b63df1d8de7442975a4c38a5df21d5b29192a98e32f0793e71585",
+          "artifact_hash": "74b8c221841e0c68ef02c002a496a9576d012a94cfba344efb5b3d8d98a78b09",
+          "mode": "protocol",
+          "cohort": "automation"
+        },
+        {
+          "id": "f22e9f66bb5d4583b0ec7bcf6ab5783c",
+          "status": "succeeded",
+          "passed": true,
+          "condition": "6edb10d88c30ca178513d5b1bcdbf2f3bc12d159e9393e5ff628b58a28e8f4da",
+          "task_hash": "d7e0fe65169ab44c36230b804bebc35364a6af4aaa1f16e09927ae0c68521010",
+          "material_hash": "b5c0bd83e734395572049f7bb01c0e690a526651211649ada7a508e9083da219",
+          "artifact_hash": "74b8c221841e0c68ef02c002a496a9576d012a94cfba344efb5b3d8d98a78b09",
+          "mode": "protocol",
+          "cohort": "automation"
+        }
+      ],
+      "release": {
+        "verdict": "passed",
+        "comparable": true
+      }
+    },
+    {
+      "task_id": "docs-config-v04",
+      "runs": [
+        {
+          "id": "fad4075b8fab42bd884fb81b9a28f80f",
+          "status": "succeeded",
+          "passed": true,
+          "condition": "6edb10d88c30ca178513d5b1bcdbf2f3bc12d159e9393e5ff628b58a28e8f4da",
+          "task_hash": "96cee84a22496ed135f7f1a24446e0a362c118149d78cd30b55e2a4f308a4dae",
+          "material_hash": "d47ce0934c5b63df1d8de7442975a4c38a5df21d5b29192a98e32f0793e71585",
+          "artifact_hash": "1b90fd5298ea7ecae67580435dc91b00137dc701d8673023291f04f59b33fbd6",
+          "mode": "protocol",
+          "cohort": "automation"
+        },
+        {
+          "id": "95b872d15ac94044ae8faa8141e1b0e8",
+          "status": "succeeded",
+          "passed": true,
+          "condition": "6edb10d88c30ca178513d5b1bcdbf2f3bc12d159e9393e5ff628b58a28e8f4da",
+          "task_hash": "96cee84a22496ed135f7f1a24446e0a362c118149d78cd30b55e2a4f308a4dae",
+          "material_hash": "b5c0bd83e734395572049f7bb01c0e690a526651211649ada7a508e9083da219",
+          "artifact_hash": "1b90fd5298ea7ecae67580435dc91b00137dc701d8673023291f04f59b33fbd6",
+          "mode": "protocol",
+          "cohort": "automation"
+        }
+      ],
+      "release": {
+        "verdict": "passed",
+        "comparable": true
+      }
+    }
+  ],
+  "limitations": [
+    "Protocol checks do not establish model improvement or human adoption.",
+    "Historical experiment denominators remain in report.json."
+  ]
+}

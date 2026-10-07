@@ -31,6 +31,6 @@ Published endpoints: [custom domain](https://adoptlab.lukewilliams.top), [Pages 
 References checked 2026-10-01: [build image and dependency installation](https://developers.cloudflare.com/pages/configuration/build-image/), [Git integration](https://developers.cloudflare.com/pages/get-started/git-integration/), [custom domains](https://developers.cloudflare.com/pages/configuration/custom-domains/).
 
 
-## v0.3 publication boundary
+## v0.4 publication boundary
 
-The 16-file allowlist includes English/Chinese product PRDs and the v0.3 observation/retest ledger. The footer records the product version; the preserved experiment selector retains the v0.2 matrix and v0.1 archive. Before merging, inspect the Pages preview using `scripts/browser_public_check.py` and confirm its security headers, downloads, condition-matched comparisons and bilingual mobile layout. Run this acceptance again against the production custom domain after automatic deployment.
+The allowlist includes the new bilingual case walkthrough, its three-case/six-run protocol projection and validation record. `index.html` is the new case landing page; `workbench.html` is a direct alias. `experiments.html` retains the v0.2 matrix and v0.1 archive. The build rejects duplicate runs, non-automation cohort labels and unsupported release claims in the upgrade report. Before merging, verify the Pages preview and downloads, security headers and bilingual mobile layout. `scripts/browser_public_check.py` checks the historical explorer; `scripts/browser_check_workbench.py` covers the local workspace and new cases. Continue acceptance in an existing browser when that is the operator's preference. Check the production custom domain after automatic deployment, including byte-for-byte report identity.

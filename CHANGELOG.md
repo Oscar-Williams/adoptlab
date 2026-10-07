@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 · 2026-10-07
+
+- Connect fourteen bilingual workbench modules with retained experiment/run context.
+- Add read-only task preflight, recorded evidence diagnosis, artifact-backed release checks and consent-based anonymous observation records.
+- Preserve immutable task/material IDs, frozen execution conditions, unknown-cost reservations and historical reports; back up SQLite before the schema-3 migration.
+- Exercise three complete baseline/revised protocol pairs, including document field/citation extraction through official Filesystem MCP.
+- Build native Figma components, variables, state variants and clickable maintainer/developer/public flows, with separate responsive examples.
+- Publish three interactive case walkthroughs at the default landing page; preserve the previous explorer at `experiments.html`. Demonstration, protocol evidence and actual human observations remain distinct.
+
 ## 0.3.0 · 2026-10-02
 
 - Add a one-task CLI with saved independent verification and actionable exit status.
