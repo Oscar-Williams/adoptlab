@@ -14,7 +14,7 @@ Three cases completed two real protocol runs each in experiment `13dd17e6f277411
 
 Three editable Word documents are delivered locally: user needs, solution decisions and detailed PRD. Selected editable [prototypes](prototype-selected.svg) and [business/AI workflow](workflow-selected.svg) are public. IDs map to the local PRD. Full documents and private runtime data stay local.
 
-Figma task editor, comparison and revision specifications were updated in Chinese and English; six updated screens were exported and prototype flow roots were read back. Cloud-save confirmation remains a separate open check. The public walkthrough remains a labeled demonstration; it does not execute visitor tools or models.
+Figma task editor, comparison and revision specifications were updated in Chinese and English; six updated screens were exported and prototype flow roots were read back. The updated comparison and revision nodes were independently opened through the cloud file in the existing Edge browser; cloud-view screenshots are retained locally. The public walkthrough remains a labeled demonstration; it does not execute visitor tools or models.
 
 ## Migration and recovery
 

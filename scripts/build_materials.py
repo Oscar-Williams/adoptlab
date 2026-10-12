@@ -317,6 +317,8 @@ def build_docs(out, runtime, plan):
         rows=[]
         for j,label in enumerate(controls.split('|'),1):
             rule=RULES[label]
+            if label=='费用上界' and key=='comparison':rule='按当前比较分组及材料汇总运行费用；只对相同条件计入对应分母，未知usage保留预留。'
+            if label=='费用上界' and key=='run':rule='读取当前运行result.cost_upper_cny，单位CNY；缺失显示未知，使用已结算金额与未结算预留计算上界。'
             if key=='release' and label=='检查按钮':rule='提交材料版本、任务集与执行模式；重新核验最新对应运行并保存release_checks，不部署网站或发起模型任务。'
             actions={'检查按钮','预检契约','预检并登记','创建并执行','保存新版本','保存反馈','关联复验','检查内置目标','执行首次任务','保存观察','删除观察','重新核验','取消'}
             editable={'Task ID','任务族','Profile','数据划分','公开任务说明','输入夹具JSON','输出文件','规则操作','JSON路径','预期值','协议步骤JSON','导入JSON','实验名称','任务多选','材料多选','执行模式','重复次数','实验费用上限','父版本或Profile','名称','修改理由','接入指南','工具描述','问题与证据','原反馈','新运行','决策理由','材料版本','任务集','匿名标识','来源','开始时间','结束时间','协助程度','证据引用','同意'}
@@ -408,7 +410,10 @@ def build_vectors(out,plan):
         for j,p in enumerate(PAGES):b+=svg_text(24,100+j*43,f'{j+1:02d} {p[1]}',16,14)
         for j,label in enumerate(controls.split('|')):
             cx=264+(j%2)*566;cy=136+(j//2)*88
-            b+=f'<g id="UI-{i:02d}-E{j+1:02d}"><rect x="{cx}" y="{cy}" width="542" height="72" rx="6" fill="#f3f8f9" stroke="#c9dce2"/>'+svg_text(cx+16,cy+26,f'E{j+1:02d}  {label}',18,30)+svg_text(cx+16,cy+53,(RULES[label].split('；')[0][:34]+'…' if len(RULES[label].split('；')[0])>34 else RULES[label].split('；')[0]),14,80)+'</g>'
+            display_rule=RULES[label]
+            if label=='费用上界' and key=='comparison':display_rule='对应比较组与材料的运行费用上界'
+            if label=='费用上界' and key=='run':display_rule='当前运行费用上界；未知usage保留预留'
+            b+=f'<g id="UI-{i:02d}-E{j+1:02d}"><rect x="{cx}" y="{cy}" width="542" height="72" rx="6" fill="#f3f8f9" stroke="#c9dce2"/>'+svg_text(cx+16,cy+26,f'E{j+1:02d}  {label}',18,30)+svg_text(cx+16,cy+53,(display_rule.split('；')[0][:34]+'…' if len(display_rule.split('；')[0])>34 else display_rule.split('；')[0]),14,80)+'</g>'
         b+=svg_text(264,930,'AC-'+ac.replace(',', ' / AC-')+' · 元素规则见PRD四列表',17,64)+'</g>'
     y=180+5*1080;b+=svg_text(48,y,'关键状态与局部变化',30)
     states=[('加载','请求中→读取成功','保持上下文，显示读取状态'),('空数据','无记录→创建或首次任务','入口明确，计数按实际显示'),('输入错误','无效JSON→行列定位','保留原文，聚焦错误位置'),('依赖缺失','检查失败→处理动作','修复依赖后显式再检查'),('运行中','queued→running','轮询状态，允许取消'),('失败','规则未通过→查看证据','定位规则，提交反馈'),('取消','请求取消→cancelled','终态与未知费用分别显示'),('超时','达到上限→timed_out','保存已完成轨迹，显式复跑'),('预算不足','预留失败→budget_exhausted','查看已结算及保留费用'),('不可比','条件漂移→INCOMPARABLE','保留明细，固定条件再执行'),('复验通过','完整证据→verified','记录时间指纹，变化显示stale')]
@@ -462,9 +467,9 @@ def build_vectors(out,plan):
     box('STOP','终止 · 取消 / 超时 / 预算耗尽\n保存实际状态、轨迹及未知费用',3300,1800,650,110,kind='end');edge('ND-M3','STOP','不满足')
     box('ND-M2','ND-M2 AI：理解任务、选择工具与生成参数\n受约束LLM + Function Calling',2300,1950,850,110,kind='ai');edge('ND-M3','ND-M2','满足')
     box('ND-09','ND-09 参数、白名单与MCP工具执行\n普通处理：限制路径、结果大小及资源',1200,2160,700,110);edge('ND-P1','ND-09');edge('ND-M2','ND-09','tool calls')
-    box('ND-M4','ND-M4 AI：将工具结果用于下一步\n提取字段、组织产物或结束任务',2300,2330,850,110,kind='ai');edge('ND-09','ND-M4','model继续')
+    box('ND-M4','ND-M4 普通编排：回注工具结果\n有界循环；下一次AI请求进入ND-M2',2300,2330,850,110);edge('ND-09','ND-M4','model继续')
     edge('ND-M4','ND-M3','仍有调用且未达上限',True)
-    box('ND-10','ND-10 保存产物、manifest与来源指纹',1200,2510,700,110);edge('ND-09','ND-10','protocol完成');edge('ND-M4','ND-10','model完成')
+    box('ND-10','ND-10 保存产物、manifest与来源指纹',1200,2510,700,110);edge('ND-09','ND-10','protocol完成');edge('ND-M4','ND-10','上限终止后保留产物');edge('ND-M2','ND-10','无工具调用，模型结束',True)
     tail=[('ND-11','独立验收通过？'),('ND-12','关联错误、轨迹与处理建议'),('ND-13','提交反馈并关联原运行'),('ND-14','人工修改材料并保存不可变版本'),('ND-15','同条件显式复验；核对实际模型身份'),('ND-16','证据完整且新产物通过？'),('ND-17','发布检查通过？'),('ND-18','白名单导出证据'),('ND-19','真实观察、协助程度及反馈'),('ND-20','公开案例浏览与版本化报告')]
     previous='ND-10'
     for i,(id,label) in enumerate(tail):
