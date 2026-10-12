@@ -1,4 +1,4 @@
-# AdoptLab v0.4: onboarding, diagnosis and revision workbench
+# AdoptLab v0.5 product and workflow guide
 
 AdoptLab helps MCP tool maintainers validate onboarding materials against real developer tasks before release and turn failures into verifiable material revisions.
 
