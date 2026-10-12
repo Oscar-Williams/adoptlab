@@ -1,18 +1,21 @@
 """Build local editable product documents and vectors from reviewed specifications.
 
 Usage: python scripts/build_materials.py --materials DIRECTORY --runtime DIRECTORY
-Requires python-docx. Complete Word pagination/render QA separately before release.
+Requires python-docx and Node.js with sharp. --node and --sharp-module select
+installed runtimes. Complete Word pagination/render QA separately before release.
 """
 import argparse
 import json
 import re
 import sqlite3
+import subprocess
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.sax.saxutils import escape
 
 PAGES = [
-('overview','工作台概览','选择工作上下文并识别下一任务','实验选择|运行选择|任务契约数|材料版本数|实验数|观察记录数|费用上界|闭环入口','GET /api/workbench/summary; GET /api/experiments; GET /api/runs','01,09,11'),
-('environment','环境检查','确认所选执行目标的依赖','执行目标|检查按钮|检查项|是否必需|就绪结果|处理动作','GET /api/doctor?target=builtin|filesystem|model','05,15'),
+('overview','工作台概览','选择工作上下文并识别下一任务','实验选择|运行选择|任务契约数|材料版本数|实验数|观察记录数|费用上界|闭环入口|维护者入口|开发者入口|案例读者入口','GET /api/workbench/summary; GET /api/experiments; GET /api/runs','01,09,11'),
+('environment','环境检查','确认所选执行目标的依赖','执行目标|Filesystem配置|检查按钮|检查项|是否必需|就绪结果|处理动作','GET /api/doctor?target={target}&profile_id={id}','05,15'),
 ('catalog','MCP与任务目录','找到工具配置及可验收任务','Profile ID|固定镜像|工具白名单|Task ID|任务族|数据划分|查看任务包|编辑入口','GET /api/catalog; GET /api/tasks/{id}/package','01,02'),
 ('task','任务契约编辑','把任务描述转为可独立验收契约','Task ID|任务族|Profile|数据划分|公开任务说明|输入夹具JSON|输出文件|规则操作|JSON路径|预期值|协议步骤JSON|导入JSON|增加规则|预检契约|预检并登记|错误位置','POST /api/tasks/preflight; POST /api/tasks/import','01,02,06'),
 ('experiment','实验配置','冻结任务材料与执行预算','实验名称|任务多选|材料多选|执行模式|重复次数|运行规模|实验费用上限|创建并执行','POST /api/experiments; POST /api/experiments/{id}/batch','03,07,11'),
@@ -35,7 +38,19 @@ SCENES = [
 ('使用观察与公开展示','观察者与公开读者','试用或评估作品时','演示、自动运行和真人采用容易混淆','理解案例并获得有来源的使用观察','案例浏览→真实报告→实际试用→同意及观察记录','13,14'),
 ]
 
+SCENE_DETAILS = [
+('本地维护者准备接入文档配置提取工具，在任务目录建立目标、输入文件与验收规则；结构错误会延后到运行阶段暴露。', 'Python、SQLite及已登记MCP profile；Filesystem任务需要当前固定Linux镜像。', '维护者提供UTF-8文档fixture和JSON任务包，逐字段人工制定Gold；登记后ID及指纹固定，内容更新登记新版本。', '预检错误定位完整性、登记无副作用与任务规则可执行性；以契约及后续独立验收为依据。', '夹具路径采用安全相对路径；工具白名单及输出路径由运行时约束，私密配置隔离保存。', '预检失败保留输入并聚焦对应字段，依赖缺失返回指定profile环境检查，修正后再次预检。'),
+('开发者安装本地工作台后，从首次任务入口检查内置依赖，执行task-01并查看生成产物及独立规则；环境和任务失败需要不同处理路径。', 'Python 3.11及MCP、FastAPI依赖；内置protocol任务使用本地CPU。', '内置task-01夹具与规则由仓库维护；执行生成run_id、调用轨迹和验证结果，观察记录由真实参与过程另行提供。', '内置任务独立验收结果；真人首次成功率、完成时长和协助程度在观察取证后计算。', '本地回环服务提供执行入口；产物及反馈保留在本地，真实观察取得同意并允许撤回。', '环境缺失给出安装动作，运行失败进入证据详情，开发者以原run_id提交反馈交给维护者。'),
+('维护者准备修改指南或工具描述，在同一任务矩阵上选择材料版本、模式与重复次数；比较前需要确认真实模型身份及条件一致。', 'protocol依赖匹配的MCP环境；model还依赖支持的模型API、冻结价格和剩余费用额度。', '任务、材料、工具schema和实验配置共同冻结；每次运行保存模型来源、调用次数、费用和验收；标准答案独立于模型上下文。', '按同条件组分别统计正常任务成功和预期拒绝，原矩阵保持12任务×4材料×3次的历史分母。', '模型上下文仅含任务、材料和允许工具；调用前预留费用，未知usage保留预留并避免自动重放。', '工具集错配阻止提交；未知模型身份保留证据不足，条件漂移标为不可比，维护者明确后重新安排实验。'),
+('维护者在运行失败或接到反馈后检查错误码、调用及独立规则，将具体问题绑定原运行，保存有理由的新材料，并执行同条件复验。', '原运行证据、不可变材料库和对应执行环境；模型复验遵守原费用约束。', '原run_id、反馈文本、新材料父版本及修改理由、新运行和核验时间构成关联链；记录来源指纹并保留原失败。', '修订链完整性、同条件验证及当前产物完整性；模型改善仅由合格model实验支持。', '反馈和修订检查敏感内容及所属关系；持久化幂等键处理网络重试和重复点击。', '产物缺失、篡改或条件不同返回明确错误；维护者补证据或重新执行，已变化的修订证据显示stale。'),
+('维护者准备发布指定接入材料版本，在本地选择任务集与模式，核验最新对应运行；读者下载报告时需要了解原判定与当前证据有效性。', '已完成的对应运行及其产物、材料哈希、任务规则；公开展示依赖静态站点与脱敏报告。', 'release_checks保存不可变检查快照；导出时重核验记录中的原运行，v2报告保留release并增加current_verification。', '任务集覆盖与passed、failed、insufficient三态；当前核验与历史记录分别呈现。', '报告使用允许字段输出，排除夹具、私人观察和自由文本；下载重新核验仅使用本地证据。', '缺运行返回insufficient，完整性或验收失败返回failed；补充运行后显式创建新检查记录。'),
+('观察者在参与者同意后记录首次任务过程及帮助程度；公开读者选择案例查看六步演示、真实报告和精选原型，理解证据对应的任务范围。', '真实参与者及观察者提供使用证据；公开路径只需浏览器访问静态站点。', '匿名标识、来源、时区起止时间、协助、run_id及本地引用组成观察记录；自动化记录独立分组，用户撤回后删除记录。', '真实观察按来源、时间窗及去重规则计算首次成功、时长和协助率；当前真人结果保持待取证。', '取得同意，原始身份及观察证据保持本地；公开文件执行脱敏和下载一致性检查。', '用户可中止或撤回；时间错误定位输入，重复观察复用既有记录，网站读取失败提供重试与报告入口。')]
+
 RULES = {
+'维护者入口':'进入MCP与任务目录，开始选择工具和任务、配置实验、诊断与修订。',
+'开发者入口':'进入开发者首次任务，检查内置依赖并执行task-01。',
+'案例读者入口':'进入公开案例与作品，浏览精选流程、报告及原型。',
+'Filesystem配置':'Filesystem目标必选已登记profile_id；检查仅核对该配置关联任务与固定镜像。其他目标隐藏此字段。',
 'Task ID':'字符串，使用合法ID；内置ID只读，已有ID同内容重试返回原定义，修改内容使用新ID。',
 '实验名称':'必填字符串，1—100字符；创建成功返回experiment_id。',
 '任务多选':'1—16个不同任务；全部ID须已登记且与材料工具集匹配。',
@@ -185,8 +200,8 @@ def build_docs(out, runtime, plan):
             for border in st.element.xpath('.//w:pBdr'):border.getparent().remove(border)
         d.styles['Normal'].font.size=Pt(11);d.styles['Normal'].paragraph_format.space_after=Pt(6)
         d.styles['Normal'].paragraph_format.line_spacing=1.15
-        d.add_heading(title,0);d.add_paragraph(code+' · V1.0 · 产品0.5.0 · 2026-10-12 · 维护者 Oscar')
-        d.add_paragraph(lead);d.add_paragraph('状态：实施与验证规格。真实观察结果待实际参与后更新；功能验证以关联证据为准。')
+        d.add_heading(title,0);d.add_paragraph(code+' · V1.1 · 产品0.5.0 · 2026-10-12 · 维护者 Oscar')
+        d.add_paragraph(lead);d.add_paragraph('设计主旨：帮助MCP工具维护者在发布接入材料前，验证开发者能否完成真实任务，并将失败转化为可复验的材料修订。')
         d.add_paragraph('目录').runs[0].bold=True;p=d.add_paragraph();f=OxmlElement('w:fldSimple');f.set(qn('w:instr'),'TOC \\o "1-2" \\h \\z \\u');p._p.append(f)
         footer=sec.footer.paragraphs[0];footer.alignment=2;footer.add_run(code+'  |  ');fld=OxmlElement('w:fldSimple');fld.set(qn('w:instr'),'PAGE');footer._p.append(fld)
         d.core_properties.title=title;d.core_properties.author='Oscar';d.core_properties.subject='MCP接入验证与材料修订';return d
@@ -261,7 +276,8 @@ def build_docs(out, runtime, plan):
     d.add_heading('3 六组需求场景',1)
     for i,(name,actor,when,pain,goal,flow,pages) in enumerate(SCENES,1):
         d.add_heading(f'SC-{i:02d} {name}',2)
-        records=[('目的',goal),('场景',f'{actor}在{when}，通过本地工作台或公开案例完成相关任务；发生频率待真实观察。'),('需求描述',pain+'。期望结果：'+goal+'。'),('涉及人员',actor+'负责该环节；实际维护者Oscar承担产品、工程及测试职责。'),('预计上线','0.4为历史基线；0.5按功能、CI、预览和正式站点门槛发布，日期以实际部署记录为准。'),('第三方依赖','内置任务依赖Python及stdio MCP；Filesystem依赖固定Linux镜像；model依赖模型API与费用约束。'),('数据来源','已登记任务、fixture、独立Gold、材料版本、运行及反馈；使用UTF-8和JSON，内容由维护者版本化维护。观察由实际参与过程提供。'),('指标','按协议验收、模型任务效果、工作流完整性、真实观察四组统计；分母和未知项见第5节。'),('安全','本地执行采用工具白名单、路径限制和容器隔离；凭据保留本地，公开输出使用字段白名单。'),('兜底','环境失败返回处理动作；输入错误定位字段；超时及预算终止保留证据；修订由维护者决定后显式复验。')]
+        detail=SCENE_DETAILS[i-1]
+        records=[('目的',goal),('场景',detail[0]+' 发生频率依据真实观察确认。'),('需求描述',pain+'。期望结果：'+goal+'。'),('涉及人员',actor+'负责该环节；实际维护者Oscar承担产品、工程及测试职责。'),('预计上线','v0.5已发布基线对应提交a60d738；当前完善经功能测试、跨平台CI、预览和正式域名检查后发布，实际日期以部署记录为准。'),('第三方依赖',detail[1]),('数据来源',detail[2]),('指标',detail[3]),('安全',detail[4]),('兜底',detail[5])]
         for title,text in records:d.add_heading(title,3);d.add_paragraph(text)
         d.add_paragraph('业务路径：'+flow+'；对应UI-'+pages.replace(',', '、UI-')+'。')
     d.add_heading('4 需求池与优先级',1)
@@ -298,7 +314,7 @@ def build_docs(out, runtime, plan):
 '工程保护和三案例通过后继续发布精选证据；模型身份或证据不完整则暂停对应比较；真实收益在观察后更新。决定关联PRD AC及版本，不将单例通过外推到全部用户。']
     for i,(step,detail) in enumerate(zip(steps,details),1):prose(d,f'POC-{i:02d} {step}',detail)
     d.add_heading('7 三案例验证',1);evidence_section(d)
-    d.add_heading('8 风险与决定',1);include(d,sections[11].split('\n',1)[1])
+    d.add_heading('8 风险与决定',1);table(d,['风险','处理决定','验证依据'],[['模型身份缺失或条件变化','按模式、来源和配置分组，身份缺失保留证据不足','comparison_sets及真实来源字段'],['产物变化或缺失','关联修订前及导出发布报告时重新核验指纹和规则','独立验收、manifest及current_verification'],['重复提交','反馈和修订采用持久化幂等键与事务','同键同内容复用原结果，冲突返回409'],['外部环境不可用','按所选profile检查固定镜像，恢复后显式执行','doctor检查项及容器真实任务'],['采用效果未知','以取得同意的观察记录支持采用指标','匿名来源、协助程度、起止时间和run_id']])
     d.add_heading('9 成本性能及继续条件',1)
     d.add_paragraph('protocol不产生模型费用。model每次最多8个请求、单次响应最多8个工具调用、单次输出1024 token；输入按UTF-8字节预算控制。未知usage保留预留费用。继续条件为独立验收可执行、费用在原约束内、证据支持结论。真实采用效益待观察。')
     d.add_heading('10 直接依据',1);d.add_paragraph('课程1—8、PRD_Ready、现有任务和独立验证器、report.json历史矩阵、新版三案例记录；Promptfoo https://www.promptfoo.dev/docs/integrations/mcp-server/；Langfuse https://langfuse.com/docs/evaluation/experiments/datasets。')
@@ -312,23 +328,67 @@ def build_docs(out, runtime, plan):
     d.add_paragraph('主路径：维护者UI-02→04→05→08→09→10→11；开发者UI-12→08→10；公开读者UI-14。错误返回输入或依赖所在节点，运行重试由明确操作触发。')
     d.add_heading('4 功能详细规格',1)
     for i,(key,name,goal,controls,api,ac) in enumerate(PAGES,1):
-        d.add_heading(f'FR-{i:02d} {name}',2);d.add_paragraph('角色：'+('公开读者' if i==14 else '开发者' if i==12 else '维护者')+'。目标：'+goal+'。触发：打开对应导航或上游任务入口。前置：'+('静态站点与报告可访问，无需本地服务或凭据。' if i==14 else '本地服务可用；依赖实验或运行的操作已选择上下文。'))
-        d.add_paragraph('主流程：读取关联对象→显示当前状态→提交明确操作→后端校验→显示结果及下一入口。输入错误保留内容并定位；运行异常保留证据和费用状态；读取失败提供恢复入口。后置：读取保持记录，写入返回持久化对象ID。')
+        d.add_heading(f'FR-{i:02d} {name}',2)
+        preview=runtime/'materials-qa'/'prototype-preview'/f'UI-{i:02d}.png'
+        if not preview.exists():raise FileNotFoundError('PROTOTYPE_PREVIEW_REQUIRED: '+str(preview))
+        d.add_picture(str(preview),width=Inches(7))
+        d.add_paragraph(f'图4-{i} UI-{i:02d} {name} 原型布局 元素编号对应下表')
+        d.add_paragraph('角色：'+('公开读者' if i==14 else '开发者' if i==12 else '维护者')+'。目标：'+goal+'。触发：打开对应导航或上游任务入口。前置：'+('静态站点与报告可访问，无需本地服务或凭据。' if i==14 else '本地服务可用；依赖实验或运行的操作已选择上下文。'))
+        flow={
+            'overview':'选择实验与运行→读取摘要和费用来源→按维护者、开发者或案例读者入口继续；切换运行清除旧材料选择，导航保持上下文。',
+            'environment':'选择目标→Filesystem选择profile→显式检查→展示required、passed和action；切换目标或配置立即清除旧检查，过期响应不覆盖新选择。',
+            'catalog':'读取配置、镜像就绪和任务→查看任务包及工具关系→选择编辑入口；依赖缺失显示准备动作。',
+            'task':'输入字段或导入JSON→配置fixture、输出和规则→预检→定位错误并保留草稿→通过后明确登记；已使用ID返回冲突，新版本使用新ID。',
+            'experiment':'选择任务与匹配材料→模式、重复次数和预算→预览规模→创建实验与批次→运行历史；提交前定位工具不匹配项并阻止不适配批次。',
+            'comparison':'选择实验→按mode、来源和条件分组→核对实际模型身份→查看正常及拒绝任务分子分母→具体运行；不可比及证据不足保留明细。',
+            'history':'选择实验与状态→选择运行→更新上下文→查看详情；刷新按保存ID恢复，失效ID显示选择提示。',
+            'run':'读取状态、轨迹、产物及规则→查看诊断→显式重新核验或取消→提交反馈；重新核验展示当前结果并保留原记录。',
+            'materials':'继承当前运行材料→编辑指南与描述→填写名称理由→保存不可变版本→查看差异→实验中选择新材料；保存后显示新ID。',
+            'feedback':'选择原运行并保存反馈→选择该反馈和新材料对应的已验收运行→填写决策→关联复验→核验时间及指纹；服务端重验条件和产物，事务处理重复请求。',
+            'release':'继承当前运行材料、任务及模式→检查对应运行→保存三态判定→下载证据；下载保留原记录并重新核验原运行。',
+            'developer':'检查内置依赖→执行task-01→读取独立验收与产物→重新核验→必要时交接反馈；显式重试创建新运行。',
+            'observations':'取得同意→填写匿名标识、来源、起止与协助程度→保存观察→分来源统计→必要时撤回；真人指标依据实际观察。',
+            'showcase':'选择案例→浏览任务、材料、轨迹、验收、修订及复验→下载真实脱敏报告→历史矩阵与精选设计；切换语言保留案例及步骤。',
+        }[key]
+        d.add_paragraph('主流程：'+flow+' 输入错误保留内容并定位；异常保留证据和费用状态；读取失败提供恢复入口。后置：读取保持记录，成功写入返回持久化对象ID。')
         rows=[]
         for j,label in enumerate(controls.split('|'),1):
             rule=RULES[label]
             if label=='费用上界' and key=='comparison':rule='按当前比较分组及材料汇总运行费用；只对相同条件计入对应分母，未知usage保留预留。'
             if label=='费用上界' and key=='run':rule='读取当前运行result.cost_upper_cny，单位CNY；缺失显示未知，使用已结算金额与未结算预留计算上界。'
+            if key=='release' and label=='证据导出':rule='下载adoptlab-release-v2报告，保留原release判定并附当前核验时间及逐运行结果。当前变化显示failed，缺失证据显示insufficient。'
+            if key=='environment' and label=='检查按钮':rule='提交所选target及Filesystem profile_id，显示此配置的依赖结果；检查不执行任务。'
             if key=='release' and label=='检查按钮':rule='提交材料版本、任务集与执行模式；重新核验最新对应运行并保存release_checks，不部署网站或发起模型任务。'
             actions={'检查按钮','预检契约','预检并登记','创建并执行','保存新版本','保存反馈','关联复验','检查内置目标','执行首次任务','保存观察','删除观察','重新核验','取消'}
             editable={'Task ID','任务族','Profile','数据划分','公开任务说明','输入夹具JSON','输出文件','规则操作','JSON路径','预期值','协议步骤JSON','导入JSON','实验名称','任务多选','材料多选','执行模式','重复次数','实验费用上限','父版本或Profile','名称','修改理由','接入指南','工具描述','问题与证据','原反馈','新运行','决策理由','材料版本','任务集','匿名标识','来源','开始时间','结束时间','协助程度','证据引用','同意'}
-            navigable={'闭环入口','处理动作','查看任务包','编辑入口','查看证据','关联反馈','查看独立验收','反馈交接','六步流程','上一步','下一步','语言切换','代码链接','设计入口','案例选择'}
+            navigable={'维护者入口','开发者入口','案例读者入口','闭环入口','处理动作','查看任务包','编辑入口','查看证据','关联反馈','查看独立验收','反馈交接','六步流程','上一步','下一步','语言切换','代码链接','设计入口','案例选择'}
             interaction=('点击后禁用重复提交；成功呈现返回对象或操作结果，失败保留输入与上下文。' if label in actions or (key=='release' and label=='检查按钮') else
                          '获得焦点后编辑或选择；提交前按规则校验，错误定位此控件。'+('草稿在当前浏览器恢复。' if key=='task' else '') if label in editable and key not in ['catalog','comparison','history'] else
                          '点击进入目标页面或状态；保留所属案例、实验或运行上下文。' if label in navigable else
                          '通过下载链接取得版本化文件；失败显示原因并允许重新请求。' if label in {'问题包下载','证据导出','真实报告','历史实验','精选原型'} else
                          '选择后刷新对应运行或实验上下文，并保存当前选择。' if label in {'实验选择','运行选择','状态筛选','执行目标'} else
-                         '只读展示后端返回值；无结果显示明确空态，长标识支持换行。')
+                         '读取所属实验或运行的接口字段；空值展示未知或空态，保持完整ID及对应版本可查。')
+            specific={
+                '预检契约':'点击提交编辑器当前JSON；有效显示指纹，失败标出错误字段及JSON行列并聚焦；保留草稿。',
+                '预检并登记':'先完成预检，再发送登记请求；登记成功显示新Task ID，冲突保留输入并提示使用新版本ID。',
+                '增加规则':'点击新增一行规则，设置文件、操作、路径及按操作所需的期望字段。',
+                '创建并执行':'先核对任务与材料工具集以及规模；错误保留选择；有效时创建实验、提交批次并进入运行历史。',
+                '保存新版本':'提交指南、工具描述、父版本及理由；成功保留新版本作为当前编辑对象并显示ID，内容不可变。',
+                '保存反馈':'将问题绑定当前run_id；网络重试使用同一幂等键，成功刷新反馈列表。',
+                '关联复验':'选择原反馈及同任务同模式的新材料成功运行；后端重核验两侧证据及条件，成功显示verified和时间。',
+                '证据导出':'点击下载时重新核验记录中的原运行；报告同时显示原release和current_verification，保持原检查不变。',
+                '父版本或Profile':'选择已有材料时加载指南、工具描述和差异；新建Profile材料时加载该工具集的初始说明。',
+                '原反馈':'选择后过滤新运行候选，限定同任务、同模式、新材料且已独立验收通过的记录。',
+                '任务多选':'选择后更新运行规模和材料工具匹配提示；一次提交只使用匹配的任务及材料组合。',
+                '材料多选':'最多选择4个版本；更改后更新工具匹配提示与运行规模。',
+                '执行目标':'选择Filesystem时显示具体配置字段；切换其他目标隐藏配置字段，检查使用当前目标。',
+                'Filesystem配置':'选择后清除旧检查结果，等待显式检查当前profile；迟到的旧请求结果保持隔离。',
+                '取消':'仅queued或running可操作；发送取消请求后刷新真实状态，保留已完成轨迹和费用。',
+                '重新核验':'重新读取当前产物并核对规则及指纹；结果展示当前完整性和独立验收，原运行记录保留。',
+                '执行首次任务':'创建首次任务实验，执行task-01的protocol运行并进入运行详情；费用口径为零模型请求。',
+                '保存观察':'校验同意、匿名标识和时区时间后关联当前运行；重复观察返回原记录，按来源分别计数。',
+                '删除观察':'撤回所选观察记录并刷新列表；运行证据继续独立保存。'}
+            interaction=specific.get(label,interaction)
             rows.append([f'UI-{i:02d}-E{j:02d}',label,rule,interaction])
         table(d,['编号','字段名称','规则解释','交互逻辑'],rows)
         d.add_paragraph('接口：'+api+'。验收：AC-'+ac.replace(',', '、AC-')+'。页面：UI-'+f'{i:02d}'+'。')
@@ -346,7 +406,28 @@ def build_docs(out, runtime, plan):
     ['不可比','条件、响应模型或任务矩阵不同','保留运行明细，固定条件后新建匹配运行'],
     ['证据不足','实际模型未知、运行未完成或缺对应证据','补足可核验证据；保留未知状态'],
     ['复验通过','新产物实时核验通过，原证据完整且条件一致','保存verified_at与指纹；产物变化转stale']])
-    d.add_heading('5 AI能力与节点规格',1);include(d,sections[10].split('### 10.1')[1].split('### 10.2')[0]);include(d,sections[9].split('### 9.2')[1].split('### 9.3')[0])
+    d.add_heading('5 AI能力与节点规格',1)
+    table(d,['AI积木类别','具体类型及适用方式','选型依据'],[
+    ['模型','deepseek-flash LLM及原生Function Calling','评价指南和工具描述对任务理解、工具选择及参数生成的影响'],
+    ['知识','任务指定UTF-8夹具、文档及精确行号','小规模明确文件可直接读取，来源可独立核验'],
+    ['检索','MCP read_text_file直接读取指定路径','当前案例文件和字段明确；向量召回与重排在出现检索规模需求后单独评估'],
+    ['交互','网页任务输入、运行详情、反馈与材料编辑','维护者获得连续操作与证据，开发者获得首次任务起点'],
+    ['处理','LLM提取字段与生成参数；规则解析、指纹和验收由程序处理','将不确定的模型输出交由独立规则检查'],
+    ['Agent','单执行器有界工具循环、短期messages上下文','限制请求、工具、时间和费用，维护者显式决定修订'],
+    ['安全','工具白名单、路径约束、容器隔离、输入输出限制','权限由运行时落实，私密配置本地隔离'],
+    ['评测运维','独立Gold规则、比较分组、实时完整性核验和Bad Case证据','保存任务版本、实际模型身份及原始分母'],
+    ['集成','模型Function Calling与MCP stdio工具执行','模型生成调用意图，MCP完成受约束工具调用'],
+    ['数据','SQLite实体、JSON任务契约、UTF-8夹具和不可变材料','明确关系、版本、幂等、来源和生命周期'],
+    ['部署','FastAPI本地运行及静态公开案例','执行与凭据在本地，精选证据通过静态站点发布']])
+    include(d,sections[10].split('### 10.1')[1].split('### 10.2')[0])
+    for node in md_table(sections[9],['ND-']):
+        ident,kind,io,problems,optimization=node
+        d.add_heading(ident+' '+kind.split('；')[0],2)
+        model=ident=='ND-M2'
+        reason=(kind.split('；',1)[1] if '；' in kind else kind)
+        limit=('最多8次模型请求，每次响应最多8个工具调用；单次输出1024 token；episode 180秒，费用先预留后结算。' if ident in ['ND-M2','ND-M3','ND-M4','ND-09'] else '上下文输入按UTF-8字节限制；指南及工具描述版本固定，标准答案仅供独立验收。' if ident=='ND-M1' else '按字段规则及事务提交；运行、材料、任务和证据ID保持准确关联。')
+        table(d,['规格','定义'],[['业务目的和积木类型',kind],['AI执行类型','LLM原生Function Calling，生成工具选择、参数和任务字段结果。' if model else '由模板、确定性规则、工具执行或人工决策完成；模型循环属于有界编排。'],['选型原因',reason],['替代方案','手工固定步骤适用于protocol基线；model用于验证材料对工具选择与参数生成的影响。' if model else '规则已能独立判定的输入、权限、费用和验收由程序处理；人工维护材料取舍并说明理由。'],['输入输出契约',io],['运行限制',limit],['问题与证据',problems],['优化与人工介入',optimization],['指标和验收','按节点输入输出及后续分支核验；运行结果、独立规则和指纹为证据。节点耗时在具有实际时间戳时计算。'],['下一分支和终止','对应节点流程图同编号连接；错误返回明确恢复节点，取消、超时、预算和请求上限形成终态。']])
+
     d.add_heading('6 非功能需求',1)
     for title,text in [('性能','测量三案例总耗时、请求和工具数；默认episode180秒，HTTP45秒，MCP读20秒；目标以实际任务规模验收。'),('可靠性','单运行认领、事务幂等、取消与中断保留状态；数据库迁移前一致性备份；恢复时不自动重放未知费用请求。'),('安全与隐私','loopback Host与Origin校验、JSON请求体20000字节上限、工具白名单、容器网络隔离和只读根；公开字段白名单。'),('兼容与可访问','Windows本机、Linux CI及Filesystem分别验证；中文英文、键盘焦点、错误提示和1440/1024/390布局检查。'),('维护与可观察','状态、错误码、运行指纹、费用预留及发布记录可查；保留历史报告、迁移备份和依赖版本。')]:prose(d,title,text)
     d.add_heading('7 数据接口与依赖',1)
@@ -384,9 +465,24 @@ def build_docs(out, runtime, plan):
     d.add_heading('10 运营与持续维护',1)
     d.add_paragraph('维护者以失败任务和反馈为入口，每次变更记录理由、父版本和复验。开发者培训从内置首次任务开始；观察者记录真实协助与结果。新工具、模型或验证器版本变化触发新的条件组。发布后检查网站可访问、下载正确、错误与预算状态。')
     d.add_heading('11 追踪与开放事项',1)
-    table(d,['需求','功能与页面','验收范围'],[[f'REQ-{i:02d}',x[6], '对应FR列明的AC'] for i,x in enumerate(SCENES,1)])
+    table(d,['需求/场景','FR/UI编号','ND节点','AC验收编号'],[
+        ['REQ-01 / SC-01','02,03,04','01—04','01,02,15'],
+        ['REQ-02 / SC-02','02,08,12','02,07—13,P1','04,05,06,09,10'],
+        ['REQ-03 / SC-03','05,06,07','05—11,M1—M4','03,07,11'],
+        ['REQ-04 / SC-04','08,09,10','11—16','05,06,07,08'],
+        ['REQ-05 / SC-05','11,14','17,18,20','06,12,17'],
+        ['REQ-06 / SC-06','13,14','19,20','13,16,17'],
+    ])
+    table(d,['需求','EVT/业务事实来源','EVID证据'],[
+        ['REQ-01','registry登记事实；预检读响应','EVID-NEW三案例的版本化task/provenance'],
+        ['REQ-02','EVT-01—04；runs终态','EVID-NEW的task-01独立验收'],
+        ['REQ-03','EVT-03—04；experiments及charges','EVID-144历史冻结矩阵及条件指纹'],
+        ['REQ-04','EVT-05—06；materials及revision_evidence','EVID-NEW原/新run与修订核验'],
+        ['REQ-05','release_checks事实；导出当前核验','EVID-NEW发布记录及白名单报告'],
+        ['REQ-06','observations/撤回事实；静态案例','观察证据取得后登记；公开EVID-NEW及EVID-144'],
+    ])
     d.add_paragraph('真实采用待取得观察；模型改进使用历史冻结矩阵，新增费用需遵守现有预算；Figma云端保存状态单独确认。原型展示目标和当前状态均通过明确标签区分。')
-    d.add_heading('12 直接来源',1);include(d,sections[4].split('\n',1)[1]);d.add_heading('课程要求追踪',2);include(d,sections[3].split('\n',1)[1])
+    d.add_heading('12 直接来源',1);d.add_paragraph('AI产品经理课程1至8笔记；PRD_Ready十二章规格；产品经理PRD模板；metro-flow2流程图格式；AdoptLab现有接口、任务契约、验证器及版本化运行证据。课程规范对应需求、方案、功能、AI、数据、测试发布及运营章节。')
     save_doc(d,out/'AdoptLab产品需求文档PRD.docx')
 
 
@@ -413,7 +509,7 @@ def build_vectors(out,plan):
             display_rule=RULES[label]
             if label=='费用上界' and key=='comparison':display_rule='对应比较组与材料的运行费用上界'
             if label=='费用上界' and key=='run':display_rule='当前运行费用上界；未知usage保留预留'
-            b+=f'<g id="UI-{i:02d}-E{j+1:02d}"><rect x="{cx}" y="{cy}" width="542" height="72" rx="6" fill="#f3f8f9" stroke="#c9dce2"/>'+svg_text(cx+16,cy+26,f'E{j+1:02d}  {label}',18,30)+svg_text(cx+16,cy+53,(display_rule.split('；')[0][:34]+'…' if len(display_rule.split('；')[0])>34 else display_rule.split('；')[0]),14,80)+'</g>'
+            b+=f'<g id="UI-{i:02d}-{j+1:02d}"><rect x="{cx}" y="{cy}" width="542" height="72" rx="6" fill="#f3f8f9" stroke="#c9dce2"/>'+svg_text(cx+16,cy+26,f'UI-{i:02d}-{j+1:02d}  {label}',18,30)+svg_text(cx+16,cy+53,(display_rule.split('；')[0][:34]+'…' if len(display_rule.split('；')[0])>34 else display_rule.split('；')[0]),14,80)+'</g>'
         b+=svg_text(264,930,'AC-'+ac.replace(',', ' / AC-')+' · 元素规则见PRD四列表',17,64)+'</g>'
     y=180+5*1080;b+=svg_text(48,y,'关键状态与局部变化',30)
     states=[('加载','请求中→读取成功','保持上下文，显示读取状态'),('空数据','无记录→创建或首次任务','入口明确，计数按实际显示'),('输入错误','无效JSON→行列定位','保留原文，聚焦错误位置'),('依赖缺失','检查失败→处理动作','修复依赖后显式再检查'),('运行中','queued→running','轮询状态，允许取消'),('失败','规则未通过→查看证据','定位规则，提交反馈'),('取消','请求取消→cancelled','终态与未知费用分别显示'),('超时','达到上限→timed_out','保存已完成轨迹，显式复跑'),('预算不足','预留失败→budget_exhausted','查看已结算及保留费用'),('不可比','条件漂移→INCOMPARABLE','保留明细，固定条件再执行'),('复验通过','完整证据→verified','记录时间指纹，变化显示stale')]
@@ -442,7 +538,11 @@ def build_vectors(out,plan):
     def edge(a,z,label='',side=False):
         nonlocal b
         x,y,w,h=positions[a];xx,yy,ww,hh=positions[z]
-        if (a in ['ND-08','ND-M3','ND-16','ND-17'] and x!=xx) or a=='GOLD':
+        if a in ['ND-02','ND-03'] and x!=xx:
+            mid=(x+xx+ww)/2
+            b+=f'<path d="M{x} {y+h/2} H{mid} V{yy+hh/2} H{xx+ww+5}" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>'
+            if label:b+=svg_text(mid+12,y+h/2-8,label,16,20)
+        elif (a in ['ND-08','ND-M3','ND-16','ND-17'] and x!=xx) or a=='GOLD':
             right=xx>x;start=x+w if right else x;end=xx+ww/2;mid=(start+end)/2
             b+=f'<path d="M{start} {y+h/2} H{mid} V{yy-28} H{end} V{yy-5}" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>'
             if label:b+=svg_text(mid+12,y+h/2-8,label,16,20)
@@ -451,15 +551,17 @@ def build_vectors(out,plan):
             b+=f'<path d="M{start} {y+h} V{mid} H{end} V{yy-5}" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>'
             if label:b+=svg_text((start+end)/2+12,mid-8,label,16,20)
         else:
-            lane=min(x,xx)-90
+            lane=min(x,xx)-(60 if a=='INPUT-ERROR' else 90)
             b+=f'<path d="M{x} {y+h/2} H{lane} V{yy+hh/2} H{xx-5}" fill="none" stroke="#b45309" marker-end="url(#arrow)"/>'
             if label:b+=svg_text(lane+8,(y+yy)/2,label,16,15)
     box('START','开始 · 维护者准备接入验证',1200,170,kind='end')
-    initial=[('ND-01','需求与任务场景'),('ND-02','环境检查与依赖'),('ND-03','契约预检与不可变登记'),('ND-04','冻结任务及Gold'),('ND-05','选择材料与工具描述'),('ND-06','冻结模型及执行配置'),('ND-07','运行入队与认领'),('ND-08','执行模式？')]
+    initial=[('ND-01','需求与任务场景'),('ND-02','环境检查与依赖'),('ND-03','契约字段与验收规则预检'),('ND-04','不可变登记与版本指纹'),('ND-05','选择材料与工具描述'),('ND-06','冻结模型及执行配置'),('ND-07','运行入队与认领'),('ND-08','执行模式？')]
     previous='START'
     for i,(id,label) in enumerate(initial):
         box(id,id+' '+label,1200,320+i*150,kind='decision' if id=='ND-08' else 'process');edge(previous,id);previous=id
     box('ENV-STOP','依赖或输入失败 → 修正后重新检查',120,650,700,110,kind='end');edge('ND-02','ENV-STOP','失败')
+    edge('ENV-STOP','ND-02','修复后重新检查',True)
+    box('INPUT-ERROR','契约错误 → 编辑器定位并修正',120,900,700,100);edge('ND-03','INPUT-ERROR','预检失败');edge('INPUT-ERROR','ND-03','重新预检',True)
     box('ND-P1','ND-P1 protocol：参考步骤生成调用\n普通确定性处理，模型请求为0',200,1550,750,110)
     box('ND-M1','ND-M1 组装Prompt与工具schema\n指南、公开指令、允许工具；隔离Gold',2300,1550,850,110)
     edge('ND-08','ND-P1','protocol');edge('ND-08','ND-M1','model')
@@ -470,11 +572,12 @@ def build_vectors(out,plan):
     box('ND-M4','ND-M4 普通编排：回注工具结果\n有界循环；下一次AI请求进入ND-M2',2300,2330,850,110);edge('ND-09','ND-M4','model继续')
     edge('ND-M4','ND-M3','仍有调用且未达上限',True)
     box('ND-10','ND-10 保存产物、manifest与来源指纹',1200,2510,700,110);edge('ND-09','ND-10','protocol完成');edge('ND-M4','ND-10','上限终止后保留产物');edge('ND-M2','ND-10','无工具调用，模型结束',True)
-    tail=[('ND-11','独立验收通过？'),('ND-12','关联错误、轨迹与处理建议'),('ND-13','提交反馈并关联原运行'),('ND-14','人工修改材料并保存不可变版本'),('ND-15','同条件显式复验；核对实际模型身份'),('ND-16','证据完整且新产物通过？'),('ND-17','发布检查通过？'),('ND-18','白名单导出证据'),('ND-19','真实观察、协助程度及反馈'),('ND-20','公开案例浏览与版本化报告')]
+    tail=[('ND-11','独立验收通过？'),('ND-12','关联错误、轨迹与处理建议'),('ND-13','提交反馈并关联原运行'),('ND-14','人工修改材料并保存不可变版本'),('ND-15','同条件显式复验；核对实际模型身份'),('ND-16','证据完整且新产物通过？'),('ND-17','发布检查通过？'),('ND-18','白名单导出证据'),('ND-19','取得同意后记录真实观察（可选）'),('ND-20','公开案例浏览与版本化报告')]
     previous='ND-10'
     for i,(id,label) in enumerate(tail):
-        box(id,id+' '+label,1200,2690+i*170,700,110,kind='decision' if id in ['ND-11','ND-16','ND-17'] else 'process');edge(previous,id,'需要反馈' if previous=='ND-11' else '证据完整且新产物通过' if previous=='ND-16' else '通过' if previous=='ND-17' else '');previous=id
+        box(id,id+' '+label,1200,2690+i*170,700,110,kind='decision' if id in ['ND-11','ND-16','ND-17'] else 'process');edge(previous,id,'取得同意后观察' if previous=='ND-18' else '需要反馈' if previous=='ND-11' else '证据完整且新产物通过' if previous=='ND-16' else '通过' if previous=='ND-17' else '');previous=id
     edge('ND-11','ND-17','通过且直接检查发布',True)
+    edge('ND-18','ND-20','公开展示，可独立于真实观察',True)
     box('RELEASE-HOLD','失败或证据不足 · 保留检查结果\n补充运行或修订后显式重检',2300,4050,850,110,kind='end');edge('ND-17','RELEASE-HOLD','失败 / 不足')
     box('REWORK','证据不足或产物变化\n定位问题后显式修订与复验',220,3400,750,120,kind='end');edge('ND-16','REWORK','失败 / 不足');edge('REWORK','ND-14','处理后',True)
     box('END','结束 · 发布证据与持续维护',1200,4470,700,90,kind='end');edge('ND-20','END')
@@ -483,24 +586,33 @@ def build_vectors(out,plan):
         y=3000+i*250
         box('CASE-'+str(i+1),name+'\n'+detail+'\n均连接ND-13至ND-18的修订与发布闭环。',2300,y,1500,160)
     base=4740
-    for i,row in enumerate(nodes):
-        x=48+i%2*2000;y=base+i//2*650
-        b+=f'<g id="CARD-{escape(row[0])}"><rect x="{x}" y="{y}" width="1940" height="610" rx="8" fill="white" stroke="#c9dce2"/>'
-        labels=['节点','类别与类型','输入与输出','问题与证据','优化与处置']
-        offset=42
-        for label,cell in zip(labels,row):
-            value=label+'：'+cell
-            b+=svg_text(x+24,y+offset,value,20,85)
-            offset+=max(1,(len(value)+84)//85)*30+22
-        b+=svg_text(x+24,y+offset,'验收：按对应AC核验输入、输出与分支；人工介入由维护者显式决定。',18,95)+'</g>'
-    (out/'AdoptLab节点流程图.svg').write_text(svg_root(4050,base+((len(nodes)+1)//2)*650+60,'AdoptLab节点流程图',b),encoding='utf-8')
+    (out/'AdoptLab节点流程图.svg').write_text(svg_root(4050,base,'AdoptLab节点流程图',b+svg_text(48,4630,'节点类型、输入输出、选型依据、故障与优化详见PRD第5章对应ND编号。',22,110)),encoding='utf-8')
 
+
+
+def build_previews(out,runtime,node,sharp_module):
+    """Render the same editable vectors embedded in PRD, never silently omit figures."""
+    root=ET.parse(out/'AdoptLab产品设计原型图.svg').getroot()
+    namespace='http://www.w3.org/2000/svg'
+    ET.register_namespace('',namespace)
+    dest=runtime/'materials-qa'/'prototype-preview';dest.mkdir(parents=True,exist_ok=True)
+    items=[]
+    for i in range(1,15):
+        group=next(g for g in root.iter() if g.get('id')==f'UI-{i:02d}')
+        group.attrib.pop('transform',None)
+        svg=ET.Element('{'+namespace+'}svg',width='1440',height='1000',viewBox='0 0 1440 1000')
+        wrapper=ET.SubElement(svg,'{'+namespace+'}g',{'font-family':'Microsoft YaHei,Arial,sans-serif','fill':'#19353f'})
+        wrapper.append(group)
+        items.append({'svg':ET.tostring(svg,encoding='unicode'),'path':str(dest/f'UI-{i:02d}.png')})
+    script="const fs=require('fs');const sharp=require(process.argv[1]);const items=JSON.parse(fs.readFileSync(0,'utf8'));(async()=>{for(const i of items)await sharp(Buffer.from(i.svg)).png().toFile(i.path);})().catch(e=>{console.error(e.message);process.exit(1);});"
+    subprocess.run([node,'-e',script,sharp_module],input=json.dumps(items),text=True,encoding='utf-8',check=True)
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--materials',type=Path,required=True);p.add_argument('--runtime',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--materials',type=Path,required=True);p.add_argument('--runtime',type=Path,required=True)
+    p.add_argument('--node',default='node');p.add_argument('--sharp-module',default='sharp');a=p.parse_args()
     plan=(a.materials/'AdoptLab材料执行方案.md').read_text(encoding='utf-8')
-    build_docs(a.materials,a.runtime,plan);build_vectors(a.materials,plan)
+    build_vectors(a.materials,plan);build_previews(a.materials,a.runtime,a.node,a.sharp_module);build_docs(a.materials,a.runtime,plan)
     print('Built three editable Word documents and two SVG specifications.')
 
 

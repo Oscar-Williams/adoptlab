@@ -18,8 +18,15 @@ Figma task editor, comparison and revision specifications were updated in Chines
 
 ## Migration and recovery
 
-The canonical project and runtime were copied to the consolidated workspace. All 1,746 migrated runtime files matched their source SHA-256; 358 historical runs were retained and SQLite integrity passed. Schema 4 adds submissions and revision evidence after a consistent backup. The old workspace and old Docker data remain recovery sources. Credentials and full local Word documents are excluded from publication.
+The canonical project and runtime were copied to the consolidated workspace. All 1,746 migrated runtime files matched their source SHA-256; 358 historical runs were retained and SQLite integrity passed. Schema 4 adds submissions and revision evidence after a consistent backup. The consolidated workspace is the development entry. Existing version materials remain in its archive; the active Docker disk and current pinned image support future runs. Credentials and full local Word documents are excluded from publication.
 
 ## Publication gate
 
 Windows, Linux and real container CI must pass on the candidate branch before merge. The public site contains only allowlisted static assets and sanitized reports. Formal-domain checks verify the current report and downloads after deployment. Actual participants and model improvements require their own supporting evidence.
+
+
+## Maintainer workflow refinement
+
+The overview explains the product purpose and the maintainer, developer and case-reader paths. Filesystem readiness checks target a selected profile. Experiment submission checks task and material tool compatibility before creating an experiment. Material editing and release checks inherit the selected run. Feedback revision choices list accepted same-task, same-mode runs with a new material; the backend rechecks full conditions and artifacts. Release exports preserve the original decision and include current verification of the exact recorded runs. Local regression: 58 passed, 2 platform-specific skips. Candidate CI and formal publication are separate release gates.
+
+The local PRD embeds fourteen numbered prototype figures and traces six scenarios to functions, nodes, acceptance rules and evidence. The editable node SVG keeps the main workflow and recovery branches; detailed node choices, failures and optimization are in the PRD. Current-tree scanning checked 143 candidate files and credential scanning checked 250 unique reachable historical blobs with zero findings. An isolated README smoke task passed independent verification with zero model requests. Fourteen English modules and the developer/public entry paths at 1440, 1024 and 390 widths loaded without horizontal overflow in the existing Edge session. The updated Figma overview was independently opened from its cloud prototype.

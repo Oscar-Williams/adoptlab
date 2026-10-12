@@ -10,4 +10,6 @@ Cloud tracing is opt-in and limited to the synthetic competitor workflow. Explic
 
 Public reports use an allowlist. Raw tool artifacts and free text remain private. The Git hooks run `scripts/check_public_tree.py` without printing matches. Check ignored, tracked and historical content before any public release. Hooks are one layer; review staged changes and generated exports too.
 
+Run `python scripts/check_public_tree.py --history` before publication. It checks current candidate files and reachable Git blobs for credential patterns and known credentials loaded from local private configuration. `--staged` checks the exact staged bytes. Findings print file/object identifiers and reasons, keeping matched values private. A clean scan complements manual review of exports and file purpose.
+
 For a vulnerability, prepare a minimal synthetic reproduction with version, platform and expected/actual behavior. Contact the maintainer privately through an agreed channel; do not put credentials or personal records in a public issue. Rotate a credential if it enters an unintended destination or public history.

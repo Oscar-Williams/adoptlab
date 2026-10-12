@@ -117,9 +117,9 @@ async def materials():return store.materials()
 @app.post('/api/materials')
 async def material(data:MaterialInput):return store.add_material(data.guide,data.descriptions,data.name,data.parent,data.reason)
 @app.get('/api/doctor')
-async def check_environment(target:Literal['builtin','filesystem','model']='builtin'):
+async def check_environment(target:Literal['builtin','filesystem','model']='builtin',profile_id:str|None=None):
     from .config import doctor
-    return await asyncio.to_thread(doctor,target,store.root)
+    return await asyncio.to_thread(doctor,target,store.root,profile_id)
 @app.get('/api/profiles')
 async def profiles():return store.registered('profile')
 @app.get('/api/materials/{id}/diff')

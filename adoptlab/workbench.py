@@ -1,4 +1,5 @@
 """Evidence-first workbench APIs. No inference or tools run during preflight."""
+import asyncio
 import json
 import math
 import re
@@ -73,9 +74,17 @@ def preflight(data, s):
 async def check_task(data:dict):return preflight(data,store())
 
 @router.get('/catalog')
-async def catalog():
+async def catalog(include_readiness:bool=False):
     s=store()
-    return {'tasks':[{'id':t['id'],'family':t['family'],'split':t['split'],'profile':t.get('profile','builtin'),'hash':digest(t)} for t in s.tasks().values()], 'profiles':s.registered('profile'),'materials':s.materials()}
+    from .packages import pinned_image_ready
+    profiles=s.registered('profile')
+    availability={}
+    if include_readiness:
+        unique={p['image']:p for p in profiles}
+        results=await asyncio.gather(*(asyncio.to_thread(pinned_image_ready,p) for p in unique.values()))
+        availability=dict(zip(unique,results))
+    return {'tasks':[{'id':t['id'],'family':t['family'],'split':t['split'],'profile':t.get('profile','builtin'),'hash':digest(t)} for t in s.tasks().values()],
+            'profiles':[{**p,'image_available':availability.get(p['image'])} for p in profiles],'materials':s.materials()}
 
 @router.get('/tasks/{id}/package')
 async def task_package(id:str):return store().task(id)
@@ -137,10 +146,50 @@ async def releases():
 
 @router.get('/releases/{id}/export')
 async def release_export(id:str):
-    with store().connect() as c:r=c.execute('SELECT content FROM release_checks WHERE id=?',(id,)).fetchone()
+    s=store()
+    with s.connect() as c:r=c.execute('SELECT content FROM release_checks WHERE id=?',(id,)).fetchone()
     if not r:raise KeyError('NOT_FOUND')
-    # The stored check is already a strict projection, without fixtures, observations or free text.
-    return JSONResponse({'schema':'adoptlab-release-v1','release':json.loads(r['content'])},headers={'Content-Disposition':'attachment; filename=adoptlab-release.json'})
+    recorded=json.loads(r['content'])
+    return JSONResponse({'schema':'adoptlab-release-v2','release':recorded,
+                         'current_verification':release_evidence(s,recorded)},
+                        headers={'Content-Disposition':'attachment; filename=adoptlab-release.json','Cache-Control':'no-store'})
+
+
+def release_evidence(s, recorded):
+    """Recheck the exact recorded evidence without replacing the historical decision."""
+    from .engine import reverify
+    checks=[]
+    for original in recorded['checks']:
+        check={'task_id':original['task_id'],'run_id':original.get('run_id')}
+        if not check['run_id']:
+            checks.append({**check,'verdict':'insufficient','reason':'NO_RECORDED_RUN'})
+            continue
+        try:
+            run=s.get_run(check['run_id'])
+            task=s.task(check['task_id'])
+            material=s.material(recorded['material'])
+            provenance=(run['result'] or {}).get('provenance',{})
+            scope=(run['experiment_id']==recorded['experiment_id'] and
+                   run['task_id']==check['task_id'] and run['material']==recorded['material'] and
+                   run['mode']==recorded['mode'] and run['cohort']!='withdrawn' and
+                   material['hash']==recorded['material_hash'] and
+                   provenance.get('material_hash')==recorded['material_hash'])
+            if task.get('verifier') or (recorded['mode']=='model' and not provenance.get('model')):
+                checks.append({**check,'verdict':'insufficient','reason':'EXPLICIT_VERIFICATION_OR_MODEL_ID_REQUIRED'})
+                continue
+            result=reverify(s,run['id'],False)
+            intact=all(result.get(k) for k in ['manifest_matches_db','task_matches','artifact_hash_matches'])
+            passed=scope and intact and run['status']=='succeeded' and result['verification']['passed']
+            checks.append({**check,'verdict':'passed' if passed else 'failed',
+                           'reason':'VERIFIED' if passed else 'ACCEPTANCE_OR_INTEGRITY_CHANGED'})
+        except (ValueError,OSError,KeyError):
+            checks.append({**check,'verdict':'insufficient','reason':'EVIDENCE_UNAVAILABLE'})
+    verdict=('failed' if any(c['verdict']=='failed' for c in checks) else
+             'insufficient' if not checks or not recorded.get('comparable') or
+             not recorded.get('known_responder',recorded['mode']=='protocol') or
+             any(c['verdict']=='insufficient' for c in checks) else 'passed')
+    return {'checked_at':now(),'verdict':verdict,'checks':checks,
+            'scope':'Exact recorded runs; the original release decision remains immutable.'}
 
 class ObservationInput(Strict):
     participant:str=Field(pattern=r'^[A-Za-z0-9_-]{1,64}$')
