@@ -408,7 +408,7 @@ def build_vectors(out,plan):
         for j,p in enumerate(PAGES):b+=svg_text(24,100+j*43,f'{j+1:02d} {p[1]}',16,14)
         for j,label in enumerate(controls.split('|')):
             cx=264+(j%2)*566;cy=136+(j//2)*88
-            b+=f'<g id="UI-{i:02d}-E{j+1:02d}"><rect x="{cx}" y="{cy}" width="542" height="72" rx="6" fill="#f3f8f9" stroke="#c9dce2"/>'+svg_text(cx+16,cy+26,f'E{j+1:02d}  {label}',18,30)+svg_text(cx+16,cy+53,(RULES[label].split('；')[0][:34]+'…' if len(RULES[label].split('；')[0])>34 else RULES[label].split('；')[0]),14,34)+'</g>'
+            b+=f'<g id="UI-{i:02d}-E{j+1:02d}"><rect x="{cx}" y="{cy}" width="542" height="72" rx="6" fill="#f3f8f9" stroke="#c9dce2"/>'+svg_text(cx+16,cy+26,f'E{j+1:02d}  {label}',18,30)+svg_text(cx+16,cy+53,(RULES[label].split('；')[0][:34]+'…' if len(RULES[label].split('；')[0])>34 else RULES[label].split('；')[0]),14,80)+'</g>'
         b+=svg_text(264,930,'AC-'+ac.replace(',', ' / AC-')+' · 元素规则见PRD四列表',17,64)+'</g>'
     y=180+5*1080;b+=svg_text(48,y,'关键状态与局部变化',30)
     states=[('加载','请求中→读取成功','保持上下文，显示读取状态'),('空数据','无记录→创建或首次任务','入口明确，计数按实际显示'),('输入错误','无效JSON→行列定位','保留原文，聚焦错误位置'),('依赖缺失','检查失败→处理动作','修复依赖后显式再检查'),('运行中','queued→running','轮询状态，允许取消'),('失败','规则未通过→查看证据','定位规则，提交反馈'),('取消','请求取消→cancelled','终态与未知费用分别显示'),('超时','达到上限→timed_out','保存已完成轨迹，显式复跑'),('预算不足','预留失败→budget_exhausted','查看已结算及保留费用'),('不可比','条件漂移→INCOMPARABLE','保留明细，固定条件再执行'),('复验通过','完整证据→verified','记录时间指纹，变化显示stale')]
@@ -437,7 +437,11 @@ def build_vectors(out,plan):
     def edge(a,z,label='',side=False):
         nonlocal b
         x,y,w,h=positions[a];xx,yy,ww,hh=positions[z]
-        if not side:
+        if (a in ['ND-08','ND-M3','ND-16','ND-17'] and x!=xx) or a=='GOLD':
+            right=xx>x;start=x+w if right else x;end=xx+ww/2;mid=(start+end)/2
+            b+=f'<path d="M{start} {y+h/2} H{mid} V{yy-28} H{end} V{yy-5}" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>'
+            if label:b+=svg_text(mid+12,y+h/2-8,label,16,20)
+        elif not side:
             start=x+w/2;end=xx+ww/2;mid=(y+h+yy)/2
             b+=f'<path d="M{start} {y+h} V{mid} H{end} V{yy-5}" fill="none" stroke="#64748b" marker-end="url(#arrow)"/>'
             if label:b+=svg_text((start+end)/2+12,mid-8,label,16,20)
@@ -446,7 +450,7 @@ def build_vectors(out,plan):
             b+=f'<path d="M{x} {y+h/2} H{lane} V{yy+hh/2} H{xx-5}" fill="none" stroke="#b45309" marker-end="url(#arrow)"/>'
             if label:b+=svg_text(lane+8,(y+yy)/2,label,16,15)
     box('START','开始 · 维护者准备接入验证',1200,170,kind='end')
-    initial=[('ND-01','需求与任务场景'),('ND-02','环境检查与依赖'),('ND-03','契约预检与不可变登记'),('ND-04','冻结任务及Gold'),('ND-05','选择材料与工具描述'),('ND-06','冻结模型及执行配置'),('ND-07','运行入队与认领'),('ND-08','protocol / model？')]
+    initial=[('ND-01','需求与任务场景'),('ND-02','环境检查与依赖'),('ND-03','契约预检与不可变登记'),('ND-04','冻结任务及Gold'),('ND-05','选择材料与工具描述'),('ND-06','冻结模型及执行配置'),('ND-07','运行入队与认领'),('ND-08','执行模式？')]
     previous='START'
     for i,(id,label) in enumerate(initial):
         box(id,id+' '+label,1200,320+i*150,kind='decision' if id=='ND-08' else 'process');edge(previous,id);previous=id
