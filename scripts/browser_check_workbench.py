@@ -10,11 +10,16 @@ PAGES=['overview','environment','catalog','task','experiment','comparison','hist
 def main():
     base=os.getenv('ADOPTLAB_BROWSER_URL','http://127.0.0.1:8780')
     out=RUNTIME/'output/edge';out.mkdir(parents=True,exist_ok=True)
-    evidence=json.loads((CODE/'runtime/v04-validation.json').read_text())
+    evidence=json.loads((RUNTIME/'validation-v05.json').read_text())
     errors=[];checks=[]
     with sync_playwright() as p:
-        browser=p.chromium.launch(channel='msedge',headless=True)
-        page=browser.new_page(viewport={'width':1440,'height':1000})
+        endpoint=os.getenv('ADOPTLAB_EDGE_CDP_URL')
+        if not endpoint:raise RuntimeError('EXISTING_EDGE_CDP_REQUIRED: use the connected Edge extension; this script never launches a browser.')
+        browser=p.chromium.connect_over_cdp(endpoint)
+        pages=[page for context in browser.contexts for page in context.pages if page.url.startswith(base)]
+        if len(pages)!=1:raise RuntimeError('SELECT_ONE_EXISTING_ADOPTLAB_TAB')
+        page=pages[0]
+        page.set_viewport_size({'width':1440,'height':1000})
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.goto(base+'/workspace')
         page.evaluate('(s)=>{localStorage.setItem("adoptlab-v04-experiment",s.exp);localStorage.setItem("adoptlab-v04-run",s.run)}',{'exp':evidence['experiment_id'],'run':evidence['cases'][2]['new_run']})
@@ -33,7 +38,7 @@ def main():
         expect(page.locator('#content h2')).to_have_text('定义可独立验收的任务')
         page.get_by_text('导入JSON任务包',exact=True).click()
         task=json.loads((CODE/'examples/document-config-task.json').read_text())
-        task['id']='docs-config-ui-v04'
+        task['id']='docs-config-ui-v05'
         page.get_by_label('任务包JSON',exact=True).fill(json.dumps(task))
         page.get_by_role('button',name='载入编辑器（不登记）',exact=True).click()
         expect(page.get_by_label('Task ID',exact=True)).to_have_value(task['id'])
@@ -84,7 +89,7 @@ def main():
         assert page.evaluate('document.activeElement.tagName') in ['A','BUTTON']
         report=page.request.get(base+'/showcase/workbench-evidence.json')
         assert report.ok and len(report.json()['cases'])==3
-        browser.close()
+        # Preserve the user-owned browser and tab.
     assert not errors,errors
     result={'browser':'Microsoft Edge','automated_only':True,'human_sessions':0,'checks':checks,'page_errors':errors,'editor_contract_run':rid}
     (out/'validation.json').write_text(json.dumps(result,indent=2),encoding='utf-8')

@@ -33,7 +33,7 @@ async def main():
         revised=await post('/api/materials',{'name':'Filesystem explicit evidence','parent':material['id'],'reason':'Clarify independent field and citation acceptance.','guide':'Read input documents. Write the required JSON artifact to /output. Preserve exact values and a source citation or one-based citation_line as requested.','descriptions':material['content']['descriptions']})
         builtin=s.material('B')
         br=await post('/api/materials',{'name':'Records explicit artifact','parent':'B','reason':'Explicit output and verification handoff.','guide':builtin['content']['guide']+' Always save the required artifact before finishing.','descriptions':builtin['content']['descriptions']})
-        exp=(await post('/api/experiments',{'title':'v0.4 independent three-case protocol validation'}))['id']
+        exp=(await post('/api/experiments',{'title':'Independent three-case protocol validation'}))['id']
         cases=[]
         for tid,old,new in [('task-01','B',br['id']),(task['id'],material['id'],revised['id']),(config['id'],material['id'],revised['id'])]:
             runs=[]
@@ -53,7 +53,7 @@ async def main():
             assert gate['verdict']=='passed',gate
             cases.append({'task_id':tid,'old_run':runs[0]['id'],'new_run':runs[1]['id'],'revision':rev['id'],'release':gate,'scope':'protocol only'})
         report=(await c.get('/api/experiments/'+exp+'/export')).json()
-        (s.root/'v04-validation.json').write_text(json.dumps({'experiment_id':exp,'cases':cases,'report':report},indent=2),encoding='utf-8')
+        (s.root/('validation-'+suffix+'.json')).write_text(json.dumps({'experiment_id':exp,'cases':cases,'report':report},indent=2),encoding='utf-8')
         sanitized={'schema':'adoptlab-upgrade-evidence-v1','mode':'protocol','human_sessions':0,'cases':[],'limitations':['Protocol checks do not establish model improvement or human adoption.','Historical experiment denominators remain in report.json.']}
         for case in cases:
             runs=[]

@@ -6,13 +6,14 @@ import math
 from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
-FILES={'index.html','experiments.html','site.css','site.js','_headers','report.json','report-v1.json','tutorial.md','experiment-results.md','experiment-results-v1.md','competitive.md','v02-validation.md','review-results.md','LICENSE.txt','product-prd.md','product-prd.zh-CN.md','v03-validation.md','workbench.html','workbench.css','workbench.js','workbench-evidence.json','v04-validation.md','workbench-prd.zh-CN.md','workbench-guide.en.md','trial-and-resume.zh-CN.md'}
+FILES={'index.html','experiments.html','site.css','site.js','_headers','report.json','report-v1.json','tutorial.md','experiment-results.md','experiment-results-v1.md','competitive.md','v02-validation.md','review-results.md','LICENSE.txt','product-prd.md','product-prd.zh-CN.md','v03-validation.md','workbench.html','workbench.css','workbench.js','workbench-evidence.json','v04-validation.md','workbench-prd.zh-CN.md','workbench-guide.en.md','trial-and-resume.zh-CN.md','v05-validation.md','workbench-evidence-v04.json','prototype-selected.svg','workflow-selected.svg'}
 
 def main():
     source=ROOT/'public-site';destination=ROOT/'dist'
     if {p.name for p in source.iterdir()}!=FILES:raise SystemExit('Unexpected source file in public-site')
     report=json.loads((source/'report.json').read_text(encoding='utf-8'))
     validate_upgrade(json.loads((source/'workbench-evidence.json').read_text(encoding='utf-8')))
+    validate_upgrade(json.loads((source/'workbench-evidence-v04.json').read_text(encoding='utf-8')))
     validate_report(report)
     validate_report(json.loads((source/'report-v1.json').read_text(encoding='utf-8')))
     pattern=re.compile(rb'sk-(?:lf-)?[A-Za-z0-9_-]{20,}|pk-lf-[A-Za-z0-9_-]{20,}|-----BEGIN (?:RSA |OPENSSH )?PRIVATE KEY-----|[A-Z]:[\\/](?:Users|Agent_Related)[\\/]')

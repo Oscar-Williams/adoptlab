@@ -15,10 +15,11 @@ class Store:
         if self.db.exists():
             with self.connect() as source:
                 schema=source.execute('PRAGMA user_version').fetchone()[0]
-                if schema>3:raise ValueError('DATABASE_VERSION_TOO_NEW')
-                if schema < 3:
-                    backup_path=root/'adoptlab.pre-v04.db'
-                    if backup_path.exists():backup_path=root/('adoptlab.pre-v04.'+uid()+'.db')
+                if schema>4:raise ValueError('DATABASE_VERSION_TOO_NEW')
+                if schema < 4:
+                    backup_name='adoptlab.pre-v04' if schema<3 else 'adoptlab.pre-v05'
+                    backup_path=root/(backup_name+'.db')
+                    if backup_path.exists():backup_path=root/(backup_name+'.'+uid()+'.db')
                     with sqlite3.connect(backup_path) as backup:source.backup(backup)
         with self.connect() as c:
             c.executescript('''
@@ -35,7 +36,9 @@ class Store:
             CREATE TABLE IF NOT EXISTS owners(run_id TEXT PRIMARY KEY REFERENCES runs(id), pid INTEGER, created TEXT);
             CREATE TABLE IF NOT EXISTS release_checks(id TEXT PRIMARY KEY, created TEXT, content TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS observations(id TEXT PRIMARY KEY, participant TEXT NOT NULL, created TEXT, fingerprint TEXT UNIQUE NOT NULL, content TEXT NOT NULL);
-            PRAGMA user_version=3;
+            CREATE TABLE IF NOT EXISTS submissions(scope TEXT, key TEXT, payload_hash TEXT NOT NULL, response_id TEXT NOT NULL, PRIMARY KEY(scope,key));
+            CREATE TABLE IF NOT EXISTS revision_evidence(revision_id TEXT PRIMARY KEY REFERENCES revisions(id) ON DELETE CASCADE, content TEXT NOT NULL);
+            PRAGMA user_version=4;
             COMMIT;
             ''')
             for key,value in MATERIALS.items():c.execute('INSERT OR IGNORE INTO materials VALUES(?,?,?,?)',(key,json.dumps(value),digest(value),now()))
@@ -159,7 +162,16 @@ class Store:
             c.execute('INSERT INTO charges VALUES(?,?,?,?,?,?)',(id,run,amount,None,'reserved',None))
         return id
     def settle(self,id,actual,usage):
-        with self.connect() as c:c.execute("UPDATE charges SET actual=?,status='observed',usage=? WHERE id=?",(actual,json.dumps(usage),id))
+        import math
+        if isinstance(actual,bool) or not isinstance(actual,(float,int)) or not math.isfinite(actual) or actual<0:raise ValueError('INVALID_SETTLEMENT')
+        with self.connect() as c:
+            c.execute('BEGIN IMMEDIATE')
+            row=c.execute('SELECT actual,usage FROM charges WHERE id=?',(id,)).fetchone()
+            if not row:raise KeyError('CHARGE_NOT_FOUND')
+            if row['actual'] is not None:
+                if row['actual']!=actual or json.loads(row['usage'])!=usage:raise ValueError('SETTLEMENT_CONFLICT')
+                return
+            c.execute("UPDATE charges SET actual=?,status='observed',usage=? WHERE id=?",(actual,json.dumps(usage),id))
     def cost(self):
         with self.connect() as c:
             r=c.execute('SELECT COALESCE(SUM(COALESCE(actual,reserved)),0),COALESCE(SUM(actual),0),SUM(CASE WHEN actual IS NULL THEN 1 ELSE 0 END) FROM charges').fetchone()
@@ -176,31 +188,61 @@ class Store:
         if experiment_id:self.get_experiment(experiment_id)
         with self.connect() as c:
             return c.execute('INSERT OR IGNORE INTO events VALUES(?,?,?,?,?,?,?,?,?)',(id,name,now(),cohort,subject,run_id,experiment_id,source,campaign)).rowcount==1
-    def feedback(self,exp,run,text):
+    def feedback(self,exp,run,text,idempotency_key=None):
         import re
+        from .integrity import replay,remember
+        if not isinstance(text,str) or not 1<=len(text)<=2000:raise ValueError('INVALID_FEEDBACK')
         if re.search(r'sk-[A-Za-z0-9_-]{12,}|(?:api[_ -]?key|token|password)\s*[:=]\s*\S+',text,re.I):raise ValueError('SENSITIVE_FEEDBACK_DENIED')
-        r=self.get_run(run)
-        if r['experiment_id']!=exp:raise ValueError('RUN_MISMATCH')
-        id=uid()
-        with self.connect() as c:c.execute('INSERT INTO feedback VALUES(?,?,?,?,?)',(id,exp,run,text,now()))
+        payload={'experiment_id':exp,'run_id':run,'text':text}
+        with self.connect() as c:
+            c.execute('BEGIN IMMEDIATE')
+            previous=replay(c,'feedback',idempotency_key,payload)
+            if previous:return previous
+            r=self.get_run(run)
+            if r['experiment_id']!=exp or r['cohort']=='withdrawn':raise ValueError('RUN_MISMATCH')
+            id=uid();stamp=now()
+            c.execute('INSERT INTO feedback VALUES(?,?,?,?,?)',(id,exp,run,text,stamp))
+            c.execute('INSERT INTO events VALUES(?,?,?,?,?,?,?,?,?)',(uid(),'feedback_submitted',stamp,r['cohort'],r['subject'],run,exp,'workbench','none'))
+            remember(c,'feedback',idempotency_key,payload,id)
         return id
-    def revision(self,feedback,newrun,decision):
+    def revision(self,feedback,newrun,decision,idempotency_key=None):
         import re
+        from .integrity import replay,remember,snapshot
+        if not isinstance(decision,str) or not 1<=len(decision)<=2000:raise ValueError('INVALID_DECISION')
         if re.search(r'sk-[A-Za-z0-9_-]{12,}|(?:api[_ -]?key|token|password)\s*[:=]\s*\S+',decision,re.I):raise ValueError('SENSITIVE_DECISION_DENIED')
-        with self.connect() as c:f=c.execute('SELECT * FROM feedback WHERE id=?',(feedback,)).fetchone()
-        if not f:raise KeyError('FEEDBACK_NOT_FOUND')
-        new=self.get_run(newrun);old=self.get_run(f['run_id'])
-        if new['experiment_id']!=f['experiment_id'] or new['task_id']!=old['task_id'] or new['status']!='succeeded' or not new['result'] or not new['result']['verification']['passed']:raise ValueError('REVISION_NOT_VERIFIED')
-        if self.material(new['material'])['hash']==self.material(old['material'])['hash']:raise ValueError('MATERIAL_UNCHANGED')
-        if self.condition(old)!=self.condition(new):raise ValueError('EXECUTION_CONDITIONS_DIFFER')
-        a=old['result'].get('provenance',{}).get('model');b=new['result'].get('provenance',{}).get('model')
-        if a and b and a!=b:raise ValueError('RESPONDER_MODEL_CHANGED')
-        id=uid()
-        with self.connect() as c:c.execute('INSERT INTO revisions VALUES(?,?,?,?,?,?)',(id,feedback,f['run_id'],newrun,decision,now()))
-        self.event(uid(),'revision_verified',new['cohort'],new['subject'],newrun,internal=True)
+        payload={'feedback_id':feedback,'new_run':newrun,'decision':decision}
+        with self.connect() as c:
+            c.execute('BEGIN IMMEDIATE')
+            previous=replay(c,'revision',idempotency_key,payload)
+            if previous:return previous
+            f=c.execute('SELECT * FROM feedback WHERE id=?',(feedback,)).fetchone()
+            if not f:raise KeyError('FEEDBACK_NOT_FOUND')
+            new=self.get_run(newrun);old=self.get_run(f['run_id'])
+            if new['experiment_id']!=f['experiment_id'] or new['task_id']!=old['task_id'] or new['status']!='succeeded' or not new['result'] or not new['result']['verification']['passed']:raise ValueError('REVISION_NOT_VERIFIED')
+            if old['cohort']=='withdrawn' or new['cohort']!=old['cohort']:raise ValueError('REVISION_COHORT_MISMATCH')
+            if self.material(new['material'])['hash']==self.material(old['material'])['hash']:raise ValueError('MATERIAL_UNCHANGED')
+            if self.condition(old)!=self.condition(new):raise ValueError('EXECUTION_CONDITIONS_DIFFER')
+            if new['mode']=='model':
+                a=(old['result'] or {}).get('provenance',{}).get('model');b=new['result'].get('provenance',{}).get('model')
+                if not a or not b:raise ValueError('RESPONDER_MODEL_UNKNOWN')
+                if a!=b:raise ValueError('RESPONDER_MODEL_CHANGED')
+            evidence={'old':snapshot(self,old['id']),'new':snapshot(self,newrun,True),'verified_at':now()}
+            # Re-read before commit; later reads compare the saved immutable snapshot again.
+            if evidence['old']!=snapshot(self,old['id']) or evidence['new']!=snapshot(self,newrun,True):raise ValueError('REVISION_EVIDENCE_CHANGED')
+            existing=c.execute('SELECT id,decision FROM revisions WHERE feedback_id=? AND new_run=?',(feedback,newrun)).fetchone()
+            if existing:
+                if existing['decision']!=decision:raise ValueError('REVISION_RELATION_EXISTS')
+                remember(c,'revision',idempotency_key,payload,existing['id'])
+                return existing['id']
+            id=uid();stamp=now()
+            c.execute('INSERT INTO revisions VALUES(?,?,?,?,?,?)',(id,feedback,f['run_id'],newrun,decision,stamp))
+            c.execute('INSERT INTO revision_evidence VALUES(?,?)',(id,json.dumps(evidence)))
+            c.execute('INSERT INTO events VALUES(?,?,?,?,?,?,?,?,?)',(uid(),'revision_verified',stamp,new['cohort'],new['subject'],newrun,new['experiment_id'],'workbench','none'))
+            remember(c,'revision',idempotency_key,payload,id)
         return id
     def withdraw(self,subject):
         with self.connect() as c:
+            c.execute('DELETE FROM submissions WHERE response_id IN (SELECT id FROM feedback WHERE run_id IN (SELECT id FROM runs WHERE subject=?)) OR response_id IN (SELECT id FROM revisions WHERE old_run IN (SELECT id FROM runs WHERE subject=?))',(subject,subject))
             c.execute('DELETE FROM revisions WHERE feedback_id IN (SELECT id FROM feedback WHERE run_id IN (SELECT id FROM runs WHERE subject=?))',(subject,))
             c.execute('DELETE FROM feedback WHERE run_id IN (SELECT id FROM runs WHERE subject=?)',(subject,))
             c.execute('DELETE FROM events WHERE subject=?',(subject,))
@@ -249,8 +291,22 @@ class Store:
         conditions={mode:sorted({self.condition(r) for r in rows if r['result'] and r['mode']==mode}) for mode in ['protocol','model']}
         models=sorted({r['result'].get('provenance',{}).get('model') for r in rows if r['result'] and r['result'].get('provenance',{}).get('model')})
         unknown=[r['id'] for r in rows if r['mode']=='model' and r['result'] and not r['result'].get('provenance',{}).get('model')]
-        compatible=all(len(v)<=1 for v in conditions.values()) and len(models)<=1
-        return {"experiment_id":exp,"groups":cohorts['automation'] if compatible else {},"cohorts":cohorts if compatible else {},"comparable":compatible,"condition_groups":conditions,"observed_models":models,"unknown_responder_runs":unknown,"incompatible_runs":[r['id'] for r in rows if r['result']] if not compatible else [],"budget":self.cost(),
+        compatible=all(len(v)<=1 for v in conditions.values()) and len(models)<=1 and not unknown
+        comparison_sets=[]
+        for cohort in ['automation','human_unverified','human_observed']:
+            for mode in ['protocol','model']:
+                selected=[r for r in rows if r['cohort']==cohort and r['mode']==mode]
+                for profile in sorted({self.task(r['task_id']).get('profile','builtin') for r in selected}):
+                    subset=[r for r in selected if self.task(r['task_id']).get('profile','builtin')==profile]
+                    finished=[r for r in subset if r['result']]
+                    ids={self.condition(r) for r in finished}
+                    responders={(r['result'] or {}).get('provenance',{}).get('model') for r in finished} if mode=='model' else set()
+                    matrix={v:sorted((r['task_id'],r['trial']) for r in subset if r['material']==v) for v in {r['material'] for r in subset}}
+                    balanced=len({json.dumps(v) for v in matrix.values()})<=1
+                    evidence_complete=all(all((r['result'].get('provenance') or {}).get(k) for k in ['task_hash','material_hash','executor_hash','backend_hash','verifier_hash','tool_schema_hash','catalog_hash','profile_hash','model_config_hash','dependencies']) for r in finished)
+                    reason='INSUFFICIENT' if len(finished)!=len(subset) or not evidence_complete or any(not model for model in responders) else 'INCOMPARABLE' if len(ids)>1 or len(responders)>1 or not balanced else 'COMPARABLE'
+                    comparison_sets.append({'cohort':cohort,'mode':mode,'profile':profile,'status':reason,'run_ids':[r['id'] for r in subset],'conditions':sorted(ids),'balanced':balanced,'groups':{v:{'total':sum(r['material']==v for r in subset),'passed':sum(r['material']==v and r['status']=='succeeded' and bool(r['result']['verification']['passed']) for r in finished),'normal_total':sum(r['material']==v and not self.task(r['task_id']).get('expected_error') for r in subset),'normal_passed':sum(r['material']==v and not self.task(r['task_id']).get('expected_error') and r['status']=='succeeded' and bool(r['result']['verification']['passed']) for r in finished),'rejection_total':sum(r['material']==v and bool(self.task(r['task_id']).get('expected_error')) for r in subset),'rejection_passed':sum(r['material']==v and bool(self.task(r['task_id']).get('expected_error')) and r['status']=='succeeded' and bool(r['result']['verification']['passed']) for r in finished),'cost_upper_cny':sum(r['result'].get('cost_upper_cny',0) for r in finished if r['material']==v)} for v in matrix} if reason=='COMPARABLE' else {}})
+        return {"experiment_id":exp,"comparison_sets":comparison_sets,"groups":cohorts['automation'] if compatible else {},"cohorts":cohorts if compatible else {},"comparable":compatible,"condition_groups":conditions,"observed_models":models,"unknown_responder_runs":unknown,"incompatible_runs":[r['id'] for r in rows if r['result']] if not compatible else [],"budget":self.cost(),
             "interpretation":"Groups retain automated experiment results. Cohorts separate local browser instances, observed sessions and withdrawn records. Protocol checks measure service correctness; model trials are exploratory. Local instances do not count unique people."}
     def export(self,exp):
         e=self.get_experiment(exp)
@@ -267,10 +323,12 @@ class Store:
         # Task IDs vary within a frozen matrix; the catalogue fingerprint covers them together.
         return digest({'mode':run['mode'],**{k:p.get(k) for k in ['backend_hash','verifier_hash','executor_hash','dependencies','model_config_hash','tool_schema_hash','catalog_hash','profile_hash']}})
     def handoff(self,exp):
+        from .integrity import revision_state
         self.get_experiment(exp)
         with self.connect() as c:
-            return {'feedback':[dict(r) for r in c.execute('SELECT * FROM feedback WHERE experiment_id=? ORDER BY created',(exp,))],
-                    'revisions':[dict(r) for r in c.execute('SELECT * FROM revisions WHERE old_run IN (SELECT id FROM runs WHERE experiment_id=?)',(exp,))]}
+            feedback=[dict(r) for r in c.execute('SELECT * FROM feedback WHERE experiment_id=? ORDER BY created',(exp,))]
+            revisions=[dict(r) for r in c.execute('SELECT * FROM revisions WHERE old_run IN (SELECT id FROM runs WHERE experiment_id=?)',(exp,))]
+        return {'feedback':feedback,'revisions':[{**r,'verification':revision_state(self,r)} for r in revisions]}
     def material_diff(self,id):
         import difflib
         new=self.material(id);parent=new['metadata']['parent']

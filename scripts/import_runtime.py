@@ -29,11 +29,13 @@ def merge(source, destination):
     source_db=source/'adoptlab.db';destination_db=destination/'adoptlab.db'
     with sqlite3.connect(source_db.as_uri()+'?mode=ro',uri=True) as src, sqlite3.connect(destination_db) as dst:
         src.row_factory=dst.row_factory=sqlite3.Row
-        if any(c.execute('PRAGMA user_version').fetchone()[0]!=3 for c in [src,dst]):raise ValueError('SCHEMA_3_REQUIRED')
+        versions=[c.execute('PRAGMA user_version').fetchone()[0] for c in [src,dst]]
+        if len(set(versions))!=1 or versions[0] not in {3,4}:raise ValueError('MATCHING_SUPPORTED_SCHEMA_REQUIRED')
+        tables=TABLES+(('revision_evidence','submissions') if versions[0]==4 else ())
         if src.execute("SELECT 1 FROM runs WHERE status IN ('queued','running')").fetchone() or dst.execute("SELECT 1 FROM runs WHERE status='running'").fetchone():raise ValueError('TERMINAL_SOURCE_AND_IDLE_DESTINATION_REQUIRED')
         dst.execute('PRAGMA foreign_keys=ON')
         pending=[];summary={}
-        for table in TABLES:
+        for table in tables:
             info=src.execute('PRAGMA table_info('+table+')').fetchall()
             keys=[r['name'] for r in sorted(info,key=lambda r:r['pk']) if r['pk']]
             columns=[r['name'] for r in info]
