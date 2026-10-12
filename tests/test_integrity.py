@@ -55,6 +55,9 @@ def test_unknown_model_does_not_suppress_protocol_set(tmp_path):
     assert next(g for g in data['comparison_sets'] if g['mode']=='model')['status']=='INSUFFICIENT'
     s.queue(e,'task-02','B')
     assert next(g for g in s.comparison(e)['comparison_sets'] if g['mode']=='protocol')['status']=='INSUFFICIENT'
+    incomplete=s.experiment('missing provenance');r=s.queue(incomplete,'task-01','A')
+    s.finish(r,'failed',{'verification':{'passed':False},'provenance':{}})
+    assert s.comparison(incomplete)['comparison_sets'][0]['status']=='INSUFFICIENT'
 
 
 def test_schema_three_backup_and_readback(tmp_path):

@@ -192,7 +192,7 @@ def build_docs(out, runtime, plan):
         d.core_properties.title=title;d.core_properties.author='Oscar';d.core_properties.subject='MCP接入验证与材料修订';return d
     def table(d,headers,rows):
         t=d.add_table(rows=1,cols=len(headers));t.autofit=False;t.style='Table Grid'
-        widths=([1.05,1.05,2.55,2.35] if headers[0]=='编号' else [1.55,1.35,.8,.8] if headers==['字段','类型','必填','主键'] else [7/len(headers)]*len(headers))
+        widths=([1.05,1.05,2.55,2.35] if headers[0]=='编号' else [1.55,1.35,.8,.8] if headers==['字段','SQLite类型','NOT NULL约束','主键'] else [7/len(headers)]*len(headers))
         if headers[0]=='ND':widths=[.85,1.65,1.5,1.5,1.5]
         for col,width in zip(t.columns,widths):col.width=Inches(width)
         for i,c in enumerate(t.rows[0].cells):c.text=headers[i]
@@ -225,14 +225,14 @@ def build_docs(out, runtime, plan):
         for line in lines:
             if line.startswith('|'):pending.append([x.strip() for x in line.strip('|').split('|')]);continue
             flush()
-            if line.startswith('### '):d.add_heading(line[4:],2)
+            if line.startswith('### '):d.add_heading(re.sub(r'^\d+\.\d+\s*','',line[4:]),2)
             elif line.strip():d.add_paragraph(line.replace('**','').replace('`',''))
         flush()
     def evidence_section(d):
         d.add_paragraph('EVID-NEW：实验 '+evidence['experiment_id']+'，三个案例各两次真实protocol运行，反馈、修订关联与发布检查完整。')
         table(d,['案例','原运行','新运行','发布结果'],[[c['task_id'],c['old_run'],c['new_run'],c['release']['verdict']] for c in evidence['cases']])
         d.add_paragraph('EVID-H144：冻结2×2指南与工具描述矩阵，12任务×4条件×3次，共144轮；AA 23/36、AB 35/36、BA 36/36、BB 36/36。结果为该离线任务集的观察差异。')
-        table(d,['任务','材料','重复','真实结果'],[[x['task_id'],x['material'],x['trial'],x['reason']] for x in report['cases'] if x['task_id']=='task-09'])
+        table(d,['任务','材料','重复','真实结果'],[[x['task_id'],x['material'],x['trial'],x['reason']] for x in report['cases'] if x['task_id']=='task-09' and x.get('mode')=='model'])
         d.add_paragraph('真实观察记录基线为0。首次成功时间、协助率、采用率和满意度在取得合格观察后计算。')
 
     d=new('AdoptLab需求文档','D1','维护者需要确认开发者能否依据接入材料完成MCP任务，并将失败转化为可核验修订。本文定义用户问题、六组业务场景、需求来源和结果口径，作为解决方案及PRD的输入。')
@@ -282,11 +282,12 @@ def build_docs(out, runtime, plan):
     d.add_paragraph('主路径：维护者UI-02→04→05→08→09→10→11；开发者UI-12→08→10；公开读者UI-14。错误返回输入或依赖所在节点，运行重试由明确操作触发。')
     d.add_heading('4 功能详细规格',1)
     for i,(key,name,goal,controls,api,ac) in enumerate(PAGES,1):
-        d.add_heading(f'FR-{i:02d} {name}',2);d.add_paragraph('角色：'+('公开读者' if i==14 else '开发者' if i==12 else '维护者')+'。目标：'+goal+'。触发：打开对应导航或上游任务入口。前置：本地服务可用，依赖实验/运行的操作已选择上下文。')
+        d.add_heading(f'FR-{i:02d} {name}',2);d.add_paragraph('角色：'+('公开读者' if i==14 else '开发者' if i==12 else '维护者')+'。目标：'+goal+'。触发：打开对应导航或上游任务入口。前置：'+('静态站点与报告可访问，无需本地服务或凭据。' if i==14 else '本地服务可用；依赖实验或运行的操作已选择上下文。'))
         d.add_paragraph('主流程：读取关联对象→显示当前状态→提交明确操作→后端校验→显示结果及下一入口。输入错误保留内容并定位；运行异常保留证据和费用状态；读取失败提供恢复入口。后置：读取保持记录，写入返回持久化对象ID。')
         rows=[]
         for j,label in enumerate(controls.split('|'),1):
-            rule=RULES.get(label,'从对应API读取实际字段与版本；空值显示明确状态，长ID可复制或换行。')
+            rule=RULES[label]
+            if key=='release' and label=='检查按钮':rule='提交材料版本、任务集与执行模式；重新核验最新对应运行并保存release_checks，不部署网站或发起模型任务。'
             actions={'检查按钮','预检契约','预检并登记','创建并执行','保存新版本','保存反馈','关联复验','检查内置目标','执行首次任务','保存观察','删除观察','重新核验','取消'}
             editable={'Task ID','任务族','Profile','数据划分','公开任务说明','输入夹具JSON','输出文件','规则操作','JSON路径','预期值','协议步骤JSON','导入JSON','实验名称','任务多选','材料多选','执行模式','重复次数','实验费用上限','父版本或Profile','名称','修改理由','接入指南','工具描述','问题与证据','原反馈','新运行','决策理由','材料版本','任务集','匿名标识','来源','开始时间','结束时间','协助程度','证据引用','同意'}
             navigable={'闭环入口','处理动作','查看任务包','编辑入口','查看证据','关联反馈','查看独立验收','反馈交接','六步流程','上一步','下一步','语言切换','代码链接','设计入口','案例选择'}
@@ -299,13 +300,28 @@ def build_docs(out, runtime, plan):
             rows.append([f'UI-{i:02d}-E{j:02d}',label,rule,interaction])
         table(d,['编号','字段名称','规则解释','交互逻辑'],rows)
         d.add_paragraph('接口：'+api+'。验收：AC-'+ac.replace(',', '、AC-')+'。页面：UI-'+f'{i:02d}'+'。')
+    d.add_heading('全局状态与恢复',2)
+    table(d,['状态','触发及展示','可操作项与退出条件'],[
+    ['加载','读取目录、实验或运行时显示加载状态','等待响应；失败显示错误并保留上下文'],
+    ['空数据','列表为空或尚未选择运行','展示创建/选择入口，选择有效对象后退出'],
+    ['输入错误','语法、类型、范围或路径校验失败','保留输入，定位行列/字段，修正后重新预检'],
+    ['依赖缺失','doctor必需项失败或镜像不可用','展示具体处理动作；用户恢复后重新检查'],
+    ['运行中','queued或running，按后端状态更新','保留当前run_id；取消后等待实际终态'],
+    ['失败','执行报错或独立规则不通过','查看轨迹、规则及反馈入口，原结果保留'],
+    ['取消','取消请求落实为cancelled','保存已有轨迹和费用；显式建立新运行'],
+    ['超时','episode或调用超过约束','显示timed_out或相应错误码；修复后显式复跑'],
+    ['预算不足','费用预留超出实验或全局上限','显示保留费用和已知结算，核对约束后重试'],
+    ['不可比','条件、响应模型或任务矩阵不同','保留运行明细，固定条件后新建匹配运行'],
+    ['证据不足','实际模型未知、运行未完成或缺对应证据','补足可核验证据；保留未知状态'],
+    ['复验通过','新产物实时核验通过，原证据完整且条件一致','保存verified_at与指纹；产物变化转stale']])
     d.add_heading('5 AI能力与节点规格',1);include(d,sections[10].split('### 10.1')[1].split('### 10.2')[0]);include(d,sections[9].split('### 9.2')[1].split('### 9.3')[0])
     d.add_heading('6 非功能需求',1)
     for title,text in [('性能','测量三案例总耗时、请求和工具数；默认episode180秒，HTTP45秒，MCP读20秒；目标以实际任务规模验收。'),('可靠性','单运行认领、事务幂等、取消与中断保留状态；数据库迁移前一致性备份；恢复时不自动重放未知费用请求。'),('安全与隐私','loopback Host与Origin校验、JSON请求体20000字节上限、工具白名单、容器网络隔离和只读根；公开字段白名单。'),('兼容与可访问','Windows本机、Linux CI及Filesystem分别验证；中文英文、键盘焦点、错误提示和1440/1024/390布局检查。'),('维护与可观察','状态、错误码、运行指纹、费用预留及发布记录可查；保留历史报告、迁移备份和依赖版本。')]:prose(d,title,text)
     d.add_heading('7 数据接口与依赖',1)
+    d.add_paragraph('以下表格记录SQLite实际DDL约束。NOT NULL为数据库列约束；业务必填与范围以随后请求模型及字段规则为准。JSON内容保留版本化契约与来源，读取端兼容历史字段。')
     with sqlite3.connect(runtime/'adoptlab.db') as c:
         for (name,) in c.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"):
-            d.add_heading(name,2);table(d,['字段','类型','必填','主键'],[[r[1],r[2],bool(r[3]),bool(r[5])] for r in c.execute('PRAGMA table_info('+name+')')])
+            d.add_heading(name,2);table(d,['字段','SQLite类型','NOT NULL约束','主键'],[[r[1],r[2],bool(r[3]),bool(r[5])] for r in c.execute('PRAGMA table_info('+name+')')])
     d.add_paragraph('schema 3增量迁移到4：新增submissions和revision_evidence。submissions以scope/key唯一约束，保存载荷哈希和响应ID；revision_evidence关联修订并随其撤回删除。其他实体和历史报告可读。')
     d.add_paragraph('POST /api/feedback及/revisions接受可选idempotency_key，8—64位安全字符；同键同载荷返回原ID，冲突409。修订读取附verification状态与verified_at。comparison新增comparison_sets，旧字段保留兼容。')
     from urllib.request import build_opener, ProxyHandler
@@ -325,6 +341,7 @@ def build_docs(out, runtime, plan):
         for method,operation in methods.items():
             if method not in ['get','post','delete','put']:continue
             d.add_paragraph(method.upper()+' '+route+' · '+operation.get('summary','')+' · 响应状态 '+', '.join(operation.get('responses',{})))
+    d.add_heading('接口边界与生命周期',2);include(d,sections[7].split('### 7.4')[1].split('### 7.5')[0]);include(d,sections[7].split('### 7.5')[1])
     d.add_heading('8 埋点指标与实验',1);include(d,sections[10].split('### 10.2')[1].split('### 10.4')[0])
     d.add_heading('9 测试验收与发布',1)
     for row in md_table(sections[14],['AC-']):

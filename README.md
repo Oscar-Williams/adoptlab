@@ -6,6 +6,10 @@
 
 The first task reads synthetic records, normalizes integer money and timezone-aware dates, writes JSON outputs and checks them with an independently implemented oracle. Four restricted tools run through a real stdio MCP connection. Maintainers can create immutable guide/description versions while preserving the backend and tool schemas.
 
+## v0.5 evidence integrity
+
+Revision links reverify current artifacts and retain verification fingerprints. Feedback and revision retries are transactional; model comparisons require known responders and matching task matrices. The task editor locates invalid JSON and restores drafts. [v0.5 validation](public-site/v05-validation.md) includes six new protocol runs and selected editable SVGs. Full product Word documents stay local.
+
 ## v0.4 integration and revision workbench
 
 Chinese is the default at `/workspace`, with a complete English interface. Fourteen modules connect environment checks, task editing/preflight, experiments, run evidence, immutable materials, feedback/retests, release checks and anonymous observations. Protocol acceptance, model experiments and human observations stay separate. [v0.4 behavior and recovery](docs/workbench-v04.md) · [中文PRD](docs/workbench-prd.zh-CN.md) · [Validation](public-site/v04-validation.md) · [Trial and resume evidence](docs/trial-and-resume.zh-CN.md).
