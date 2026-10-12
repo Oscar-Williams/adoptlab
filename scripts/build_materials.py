@@ -174,7 +174,7 @@ def build_docs(out, runtime, plan):
     from docx.oxml import OxmlElement
     from docx.oxml.ns import qn
     sections=section_map(plan)
-    evidence=json.loads((runtime/'v04-validation.json').read_text())
+    evidence=json.loads((runtime/'validation-v05.json').read_text())
     report=json.loads((Path(__file__).resolve().parents[1]/'public-site/report.json').read_text())
 
     def new(title,code,lead):

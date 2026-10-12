@@ -10,7 +10,7 @@ PAGES=['overview','environment','catalog','task','experiment','comparison','hist
 def main():
     base=os.getenv('ADOPTLAB_BROWSER_URL','http://127.0.0.1:8780')
     out=RUNTIME/'output/edge';out.mkdir(parents=True,exist_ok=True)
-    evidence=json.loads((RUNTIME/'v04-validation.json').read_text())
+    evidence=json.loads((RUNTIME/'validation-v05.json').read_text())
     errors=[];checks=[]
     with sync_playwright() as p:
         endpoint=os.getenv('ADOPTLAB_EDGE_CDP_URL')
@@ -38,7 +38,7 @@ def main():
         expect(page.locator('#content h2')).to_have_text('定义可独立验收的任务')
         page.get_by_text('导入JSON任务包',exact=True).click()
         task=json.loads((CODE/'examples/document-config-task.json').read_text())
-        task['id']='docs-config-ui-v04'
+        task['id']='docs-config-ui-v05'
         page.get_by_label('任务包JSON',exact=True).fill(json.dumps(task))
         page.get_by_role('button',name='载入编辑器（不登记）',exact=True).click()
         expect(page.get_by_label('Task ID',exact=True)).to_have_value(task['id'])
