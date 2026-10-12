@@ -23,7 +23,7 @@ async def lifespan(app):
     for worker in list(workers):worker.cancel()
     if workers:await asyncio.gather(*workers,return_exceptions=True)
 
-app=FastAPI(title='AdoptLab',version='0.4.0',lifespan=lifespan)
+app=FastAPI(title='AdoptLab',version='0.5.0',lifespan=lifespan)
 app.mount('/static',StaticFiles(directory=CODE/'adoptlab'/'static'),name='static')
 templates=Jinja2Templates(directory=CODE/'adoptlab'/'templates')
 @app.get('/favicon.ico',include_in_schema=False)
@@ -54,7 +54,7 @@ async def missing(request,e):return JSONResponse({'error':'NOT_FOUND'},status_co
 async def invalid(request,e):
     import re
     code=str(e)
-    return JSONResponse({'error':code if re.fullmatch(r'[A-Z_]{3,80}',code) else 'INVALID_REQUEST'},status_code=400)
+    return JSONResponse({'error':code if re.fullmatch(r'[A-Z_]{3,80}',code) else 'INVALID_REQUEST'},status_code=409 if code in {'IDEMPOTENCY_CONFLICT','REVISION_RELATION_EXISTS'} else 400)
 @app.exception_handler(RequestValidationError)
 async def schema_error(request,e):
     return JSONResponse({'error':'SCHEMA_ERROR','fields':[{'location':list(x['loc']),'type':x['type']} for x in e.errors()]},status_code=422)
@@ -75,10 +75,12 @@ class EventInput(Strict):
     source:str=Field(default='unknown',max_length=40,pattern=r'^[a-zA-Z0-9_-]+$')
     campaign:str=Field(default='none',max_length=40,pattern=r'^[a-zA-Z0-9_-]+$')
 class FeedbackInput(Strict):
+    idempotency_key:str|None=Field(default=None,min_length=8,max_length=64,pattern=r'^[A-Za-z0-9_-]+$')
     experiment_id:str
     run_id:str
     text:str=Field(min_length=1,max_length=2000)
 class RevisionInput(Strict):
+    idempotency_key:str|None=Field(default=None,min_length=8,max_length=64,pattern=r'^[A-Za-z0-9_-]+$')
     feedback_id:str
     new_run:str
     decision:str=Field(min_length=1,max_length=2000)
@@ -189,9 +191,9 @@ async def export(id):return JSONResponse(store.export(id),headers={'Content-Disp
 @app.post('/api/events')
 async def event(data:EventInput):return {'inserted':store.event(data.event_id,data.name,'human_unverified',data.subject,source=data.source,campaign=data.campaign)}
 @app.post('/api/feedback')
-async def feedback(data:FeedbackInput):return {'id':store.feedback(data.experiment_id,data.run_id,data.text)}
+async def feedback(data:FeedbackInput):return {'id':store.feedback(data.experiment_id,data.run_id,data.text,data.idempotency_key)}
 @app.post('/api/revisions')
-async def revision(data:RevisionInput):return {'id':store.revision(data.feedback_id,data.new_run,data.decision)}
+async def revision(data:RevisionInput):return {'id':await asyncio.to_thread(store.revision,data.feedback_id,data.new_run,data.decision,data.idempotency_key)}
 @app.post('/api/withdraw')
 async def withdraw(data:WithdrawInput):store.withdraw(data.subject);return {'withdrawn':True}
 @app.get('/api/budget')

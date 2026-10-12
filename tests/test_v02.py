@@ -28,7 +28,7 @@ def test_migration_preserves_legacy(tmp_path):
     s=Store(tmp_path)
     assert s.get_experiment(e)['title']=='preserved'
     assert (tmp_path/'adoptlab.pre-v04.db').exists()
-    with s.connect() as c:assert c.execute('PRAGMA user_version').fetchone()[0]==3
+    with s.connect() as c:assert c.execute('PRAGMA user_version').fetchone()[0]==4
 
 def test_registry_immutable_and_paths(tmp_path):
     s=Store(tmp_path);s.register('profile',profile());s.register('task',task())

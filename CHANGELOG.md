@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 · 2026-10-12
+
+- Compare balanced task/trial matrices within cohort, mode and profile; unknown model identity remains insufficient evidence.
+- Reverify revision evidence and retain fingerprints, verification time and live stale status.
+- Make feedback/revision retries transactional and cost settlement idempotent.
+- Locate invalid JSON and fields, retain task drafts and preserve the existing Edge session in browser validation.
+- Migrate SQLite to schema 4 with a consistent backup and retain historical public reports.
+- Publish three fresh protocol pairs and selected editable workflow/prototype vectors; full product Word documents remain local.
+
 ## 0.4.0 · 2026-10-07
 
 - Connect fourteen bilingual workbench modules with retained experiment/run context.

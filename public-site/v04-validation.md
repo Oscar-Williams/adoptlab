@@ -12,7 +12,7 @@ The new workspace covers fourteen workflow modules in Chinese and English. The p
 | docs-evidence-v04: official Filesystem document evidence | 2 | Both accepted | Passed |
 | docs-config-v04: document fields and source line | 2 | Both accepted | Passed |
 
-The six-run experiment is `a4f28e1acef94a6bace5c49f66e9c689`. Each case has feedback, a different immutable material, a same-condition retest and a recorded release check. Task, material, condition and artifact hashes are available in [the sanitized machine-readable report](workbench-evidence.json). A separate task registered through the new editor also passed a real Filesystem protocol run and artifact re-verification.
+The six-run experiment is `a4f28e1acef94a6bace5c49f66e9c689`. Each case has feedback, a different immutable material, a same-condition retest and a recorded release check. Task, material, condition and artifact hashes are available in [the sanitized machine-readable report](workbench-evidence-v04.json). A separate task registered through the new editor also passed a real Filesystem protocol run and artifact re-verification.
 
 The two accepted protocol runs per case test the workflow and reference plan. They do not measure whether revised wording helps a model or a person. Historical model results have not been regenerated or merged into this denominator. Observed human sessions: 0; adoption benefits: unknown; new model expense: zero.
 
