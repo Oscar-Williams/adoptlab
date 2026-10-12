@@ -1,105 +1,131 @@
 # AdoptLab
 
-[中文](docs/README.zh-CN.md) · [Architecture](docs/architecture.md) · [Measured results](docs/experiment-results.md) · [Competitive workflow](docs/competitive.md)
+**Validate MCP onboarding materials against real developer tasks, then turn failures into verifiable material revisions.** AdoptLab is a local workspace for MCP tool maintainers who publish guides, examples and tool descriptions.
 
-**Compare onboarding materials, verify a developer task, and link feedback to a tested revision.** AdoptLab is a local workspace for small MCP tool teams maintaining their documentation, examples and tool descriptions.
+[中文](docs/README.zh-CN.md) · [Browse cases](https://adoptlab.lukewilliams.top/) · [Architecture](docs/architecture.md) · [Task contracts](docs/mcp-task-packages.md) · [Contributing](CONTRIBUTING.md)
 
-The first task reads synthetic records, normalizes integer money and timezone-aware dates, writes JSON outputs and checks them with an independently implemented oracle. Four restricted tools run through a real stdio MCP connection. Maintainers can create immutable guide/description versions while preserving the backend and tool schemas.
+## What you can do
 
-## v0.5 evidence integrity
+Register independently accepted task contracts, run bounded MCP tasks, inspect traces and failures, revise immutable materials, explicitly retest under matching conditions, and export release evidence. Chinese is the default interface; English covers all fourteen modules.
 
-Revision links reverify current artifacts and retain verification fingerprints. Feedback and revision retries are transactional; model comparisons require known responders and matching task matrices. The task editor locates invalid JSON and restores drafts. [v0.5 validation](public-site/v05-validation.md) includes six new protocol runs and selected editable SVGs. Full product Word documents stay local.
+The local application executes real tools. The public site provides interactive case walkthroughs and saved reports. Follow **task → material → run → diagnosis → revision → retest → release evidence**.
 
-## v0.4 integration and revision workbench
+## Quick start: one verified task
 
-Chinese is the default at `/workspace`, with a complete English interface. Fourteen modules connect environment checks, task editing/preflight, experiments, run evidence, immutable materials, feedback/retests, release checks and anonymous observations. Protocol acceptance, model experiments and human observations stay separate. [v0.4 behavior and recovery](docs/workbench-v04.md) · [中文PRD](docs/workbench-prd.zh-CN.md) · [Validation](public-site/v04-validation.md) · [Trial and resume evidence](docs/trial-and-resume.zh-CN.md).
+Requirements: Git and Python 3.11 or newer. The built-in records task needs no Docker, model credentials or model fees. Run commands from the repository root.
 
-Three independently accepted cases cover built-in records, the official pinned Filesystem server and document configuration extraction with exact fields and citation positions. Six saved baseline/revised protocol runs establish the workflow; they do not establish model improvements or user adoption. The public landing page offers bilingual interactive case walkthroughs and downloadable evidence. [Historical experiment explorer](https://adoptlab.lukewilliams.top/experiments.html) preserves the original reports and denominators.
-
-## Preserved v0.3 first-success entry
-
-Register pinned offline MCP containers, import immutable task contracts, inspect run history, compare material lineage and export a safe problem package. The official Filesystem example adds a second task contract beyond the built-in records workflow. [Task-package tutorial](docs/mcp-task-packages.md) · [v0.2 decisions](docs/v02-decisions.md) · [v0.2 validation](docs/v02-validation.md).
-
-The developer entry follows environment check → one task → independent acceptance → linked feedback. `adoptlab first-task` runs one CPU protocol task and saves its verification report. [Product PRD](docs/product-prd.md) · [v0.3 validation](docs/v03-validation.md). The public site provides a saved-evidence walkthrough; local installation enables execution.
-
-## Published evidence
-
-[Open the bilingual cases](https://adoptlab.lukewilliams.top) · [Pages mirror](https://adoptlab.pages.dev) · [Historical explorer](https://adoptlab.lukewilliams.top/experiments.html). The frozen v0.2 matrix retains 48 protocol checks and 144 model episodes, with a historical 72-episode report. The full execution workspace runs locally.
-
-## Try it
-
-Use an independent Python 3.11 environment. Clone this repository onto your data drive, create/activate a Conda or venv environment, then run from this directory. The runtime path below is an example; choose your own writable directory. On Linux set `export ADOPTLAB_RUNTIME=/path/to/adoptlab-runtime`. Optional development/competitor dependencies are installed with `python -m pip install -e ".[dev,competitive]"`.
+### Windows PowerShell
 
 ```powershell
-python -m venv F:\Dev\adoptlab-env
-F:\Dev\adoptlab-env\Scripts\Activate.ps1
-python -m pip install -e .
-$env:ADOPTLAB_RUNTIME = "F:\Dev\adoptlab-runtime"
-adoptlab doctor --target builtin
-adoptlab first-task
-adoptlab serve
+git clone https://github.com/Oscar-Williams/adoptlab.git
+Set-Location adoptlab
+py -3.11 -m venv .venv
+& .\.venv\Scripts\python.exe -m pip install -e .
+$env:ADOPTLAB_RUNTIME = Join-Path (Get-Location) "runtime"
+& .\.venv\Scripts\adoptlab.exe doctor --target builtin
+& .\.venv\Scripts\adoptlab.exe first-task
+& .\.venv\Scripts\adoptlab.exe serve
 ```
 
-Open `http://127.0.0.1:8766/workspace#developer`. Chinese is the default; the language switch preserves the selected module. The prior developer entry remains at `/?view=developer`. Protocol mode uses real tools with a deterministic reference workflow and incurs no model fee.
+### Linux / macOS
 
-Start with **Run first task** on the developer page. Re-verify its saved artifacts and submit feedback. Open the maintainer workspace for the full comparison/revision workflow:
+```bash
+git clone https://github.com/Oscar-Williams/adoptlab.git
+cd adoptlab
+python3 -m venv .venv
+.venv/bin/python -m pip install -e .
+export ADOPTLAB_RUNTIME="$PWD/runtime"
+.venv/bin/adoptlab doctor --target builtin
+.venv/bin/adoptlab first-task
+.venv/bin/adoptlab serve
+```
 
-1. Create an experiment and run a task with A and B.
-2. Inspect verification and use **Re-verify** to check artifacts again.
-3. Save feedback, create a revised material version, and run the same task.
-4. Link the new verified run to the feedback and export a report.
+Use a Python 3.11+ interpreter for `python3`. Existing Conda users can install into a dedicated environment instead of creating `.venv`.
 
-The browser executes a local demonstration. Independent developer integration and observed user trials have separate evidence requirements.
+Open [the developer entry](http://127.0.0.1:8766/workspace#developer). `first-task` returns a run ID, `passed` and an independent verification report; a failed check exits nonzero. The page provides checks, execution, re-verification and feedback. Stop the server with Ctrl+C. For another port use `adoptlab serve --port 8780` with your environment's executable.
 
-Material comparison includes separately labeled execution cohorts and custom versions. Verdict summaries distinguish valid output from correct rejection. Withdrawing records starts a fresh anonymous browser session for subsequent actions.
+`ADOPTLAB_RUNTIME` stores the SQLite database and run artifacts and is excluded from Git. Keep it writable. Before migration, take a consistent database backup and preserve referenced artifacts together with their evidence.
 
-## Real model runs
+## Maintainer workflow
 
-Copy `.env.example` to an ignored `.env`, or use a private configuration outside the repository. Set `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL=deepseek-flash` and verify the conservative CNY prices recorded in the experiment configuration. Local price environment variables are retained for compatibility; frozen experiment prices control reservation and costing. Check [DeepSeek pricing](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/) before running. Credentials are never placed in experiment JSON.
+1. Select a task, or preflight and register a new contract. Preflight reports field errors without registration or execution.
+2. Choose material whose tool descriptions match the task tools. Freeze mode, conditions and repetitions in an experiment.
+3. Execute and inspect the tool trace and independent acceptance. Re-verify artifacts when investigating failures.
+4. Save linked feedback and an immutable material version with a change reason.
+5. Explicitly run the revision under the same conditions, then link the accepted run. Linking rechecks evidence and artifacts.
+6. Check the selected material/task set and download evidence. The v2 release export preserves the original decision and adds current verification.
+
+Protocol mode follows reference steps and proves execution/acceptance. Model mode evaluates material guidance for a bounded model executor. Model comparisons require matching conditions and known actual responders. [Current validation](public-site/v05-validation.md) covers records, Filesystem evidence and document configuration extraction.
+
+## Optional Filesystem tasks
+
+Start Docker with a Linux engine and put `docker` on PATH. Preparation downloads pinned upstream source, resolves base-image digests, builds the server and registers a profile, task and matching material. Building needs network access; task containers use configured isolation restrictions.
 
 ```powershell
-adoptlab run --config examples/probe.json
-adoptlab run --config examples/matrix.json
-adoptlab compare --experiment <experiment-id>
-adoptlab verify --run <run-id>
+# Use your active environment's Python and adoptlab executables.
+& .\.venv\Scripts\python.exe scripts/prepare_filesystem.py --profile-id filesystem-v04 --task-id docs-evidence-v04 --image-tag adoptlab-filesystem:v04
+& .\.venv\Scripts\adoptlab.exe doctor --target filesystem
+& .\.venv\Scripts\adoptlab.exe run --config "$env:ADOPTLAB_RUNTIME/filesystem-run.json"
 ```
 
-Default episode limits are eight model requests including retries, 1,024 output tokens per request, 8,192 output tokens total and a 180-second deadline. Experiment settings can reduce these bounds. Saved configuration controls actual execution. A shared SQLite ledger reserves the worst-case request cost before sending. Unknown network outcomes keep their reservation. Reports use a conservative cost upper bound; provider invoice charges may be lower. The initial integration supports DeepSeek Flash only.
+On Linux/macOS use `"$ADOPTLAB_RUNTIME/filesystem-run.json"` for the last argument. Rebuilding may change the digest: choose new profile/task IDs for a new build. The environment page checks the selected profile. See [contracts and recovery](docs/mcp-task-packages.md).
 
-## Run the new factorial
+## Optional model experiments
+
+Use [.env.example](.env.example) to configure an ignored repository `.env`, or `ADOPTLAB_RUNTIME/../private/.env`. Credentials stay out of experiment JSON, reports and screenshots. The current executor supports `deepseek-flash`; [check provider pricing](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/) and frozen experiment prices before running.
+
+Review `examples/probe.json`, remaining shared budget and unresolved reservations before launching this paid probe:
 
 ```powershell
-python scripts/run_v02_matrix.py
-python scripts/analyze_v02.py
+& .\.venv\Scripts\adoptlab.exe doctor --target model
+& .\.venv\Scripts\adoptlab.exe run --config examples/probe.json
+& .\.venv\Scripts\adoptlab.exe compare --experiment "EXPERIMENT_ID_FROM_OUTPUT"
+& .\.venv\Scripts\adoptlab.exe verify --run "RUN_ID_FROM_OUTPUT"
 ```
 
-This freezes a guide × tool-description factorial with 48 protocol checks and 144 model trials. It retains task-family holdouts, original failures and uncertain request reservations. It requires configured model credentials and uses the existing shared budget ledger.
+Replace quoted ID strings with returned IDs. Defaults allow eight model requests including retries, 1,024 output tokens per request and a 180-second deadline; saved settings control actual bounds. The SQLite ledger reserves conservative costs before requests and retains reservations for unknown outcomes. Cost upper bounds and provider billing are separate values.
 
-## What has been measured
+Historical matrix scripts support reproducibility and launch larger paid experiments. Review [measured results and denominators](docs/experiment-results.md) before choosing a reproduction plan.
 
-The v0.2 factorial contains 48 protocol checks (48 passed) and 144 model episodes: AA 23/36, AB 35/36, BA 36/36, BB 36/36. One pre-response failure retains an unknown responder and remains in the denominator. [Experiment results](docs/experiment-results.md) describe task-family holdouts, conservative costs and exploratory contrasts. [Historical v0.1 evidence](docs/experiment-results-v1.md) remains available. [Review and iteration](docs/review-results.md) separates Codex simulations from observed participants. Real developer adoption remains unmeasured.
+## Evidence and integrations
 
-## Integrate with evaluation tools
+| Evidence | Scope |
+|---|---|
+| [Three-case walkthrough](https://adoptlab.lukewilliams.top/) | Saved protocol runs, revision links and downloadable reports |
+| [Historical explorer](https://adoptlab.lukewilliams.top/experiments.html) | Original reports, including 48 protocol checks and 144 model episodes in v0.2 |
+| [Evidence index](docs/evidence-index.md) | Decisions, provenance and version-specific validation |
+| [Trial preparation](docs/trial-and-resume.zh-CN.md) | Observation method; adoption outcomes await recorded participation |
 
-[Promptfoo and Langfuse adapters](competitive/) use the same bounded executor and verifier. This keeps the task consistent while comparing configuration, assertions, reporting and feedback workflows. Optional Langfuse tracing records synthetic model generations and tool calls with pre-export masking; it does not capture coding-agent conversations or personal research files.
+Protocol acceptance, model outcomes, automated checks and human observations use separate populations and denominators. Revised protocol cases establish the workflow; material effectiveness requires controlled model evidence and adoption requires observations.
+
+[Promptfoo and Langfuse adapters](docs/competitive.md) reuse the bounded executor and verifier. Install `".[competitive]"` for the optional Langfuse adapter. Tracing uses your own project credentials and masked synthetic generations/tool calls.
+
+## Develop and check
+
+Use the environment created above. Windows PowerShell:
 
 ```powershell
-python competitive/langfuse_experiment.py
-python scripts/langfuse_audit.py
+& .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+& .\.venv\Scripts\python.exe -m pytest -q
+& .\.venv\Scripts\python.exe scripts/check_public_tree.py
+& .\.venv\Scripts\python.exe scripts/build_static_site.py
 ```
 
-Cloud tracing requires your own Langfuse project credentials. Public exports omit keys, personal paths, browser identifiers and free text. See [Security](SECURITY.md).
+On Linux/macOS use `.venv/bin/python` in place of `.\.venv\Scripts\python.exe`. Tests isolate databases and paid calls. CI checks Windows and Linux, with separate Filesystem integration. [Design principles](DESIGN.md), [contributor instructions](CONTRIBUTING.md) and [agent guidance](AGENTS.md) define change expectations.
 
-## Scope and provenance
+The static build reads allowlisted source assets into `dist/` without credentials or runtime data. [Deployment](docs/deployment.md) describes Pages previews and production checks. Keep execution bound to loopback; the public site serves saved evidence.
 
-AdoptLab contains the original onboarding/version/verification/budget/product workflow and a narrow [MCPMark adapter](adoptlab/upstream.py). MCPMark's pinned checkout supplies upstream task setup and verification for an interoperability baseline; the custom records executor is original code. [Architecture decisions](docs/architecture.md) explain this separation and the tested Windows path. [Upstream lock](upstream.lock.json) and [notices](NOTICE.md) preserve sources and licenses.
+## Repository map
 
-Windows/Python 3.11, the installed Edge browser, real stdio MCP, DeepSeek and Langfuse SDK have been exercised locally. Hosted multi-user execution, arbitrary external tools, broad model compatibility and independent human trial outcomes are future work.
+| Path | Purpose |
+|---|---|
+| `adoptlab/` | FastAPI, Jinja2, JS/CSS, SQLite, MCP execution and verification |
+| `examples/` | Synthetic fixtures, contracts and bounded configurations |
+| `tests/` | Contract, budget, state, migration and evidence regressions |
+| `scripts/` | Reproducible integration, analysis, material and site generation |
+| `docs/` | Setup, architecture and version-labeled evidence |
+| `competitive/` | Optional evaluation adapters |
+| `public-site/` | Bilingual saved-evidence site and selected editable designs |
+| `upstream.lock.json`, `NOTICE.md` | Pinned provenance and external licenses |
 
-MIT for original AdoptLab code. External projects retain their own licenses. See [LICENSE](LICENSE), [Contributing](CONTRIBUTING.md) and [Changelog](CHANGELOG.md).
-
-## Publication preview
-
-The [static explorer](public-site/) browses allowlisted saved results without a backend, uploads or inference calls. `python scripts/build_static_site.py` builds the complete committed site into `dist` without local runtime data or third-party dependencies. [Cloudflare Pages Git integration](docs/deployment.md) automatically publishes this directory on updates. The local exporter `scripts/build_public_site.py` prepares evidence for review before updating committed assets. Keep the execution service local until authentication, isolation and resource governance have been implemented for remote use.
-
-[Evidence index](docs/evidence-index.md) connects product decisions, original mechanisms, experiments, review changes and release checks.
+Private runtime data, full local Word deliverables, workspace-specific paths and temporary QA files stay outside the public tree. [Security](SECURITY.md) defines data handling and disclosure. Original code is MIT licensed; external projects retain their licenses. [License](LICENSE) · [Changelog](CHANGELOG.md).

@@ -70,9 +70,16 @@ def test_gate_observation_and_tamper(tmp_path,monkeypatch):
         assert c.post('/api/observations',json={**obs,'consent':False}).status_code==400
         export=c.get('/api/releases/'+gate['id']+'/export').text
         assert 'participant' not in export and 'session-01' not in export
+        before=c.get('/api/releases/'+gate['id']+'/export').json()
+        assert before['schema']=='adoptlab-release-v2'
+        assert before['current_verification']['verdict']=='passed'
         files=list((tmp_path/'runs'/run/'outputs').glob('*'))
         assert files
         files[0].write_text('{}',encoding='utf-8')
+        after=c.get('/api/releases/'+gate['id']+'/export').json()
+        assert after['release']==gate
+        assert after['current_verification']['verdict']=='failed'
+        assert after['current_verification']['checks'][0]['run_id']==run
         assert c.post('/api/releases',json=body).json()['verdict']=='failed'
         assert c.request('DELETE','/api/observations/'+first['id'],json={}).status_code==200
 
@@ -91,3 +98,29 @@ def test_doctor_requires_image_for_a_profile_with_a_task(tmp_path,monkeypatch):
     assert next(c for c in result['checks'] if c['id']=='filesystem_registration')['passed']
     assert not next(c for c in result['checks'] if c['id']=='pinned_image')['passed']
     assert not result['ready']
+    task['id']='ready-task';task['profile']='filesystem-ready';s.register('task',task)
+    assert doctor('filesystem',tmp_path)['ready']
+    assert not doctor('filesystem',tmp_path,'filesystem-missing')['ready']
+    assert doctor('filesystem',tmp_path,'filesystem-ready')['ready']
+    assert not doctor('filesystem',tmp_path,'unknown-profile')['ready']
+
+
+def test_catalog_only_inspects_images_when_requested(tmp_path,monkeypatch):
+    import adoptlab.web as web
+    import adoptlab.packages as packages
+    s=Store(tmp_path);monkeypatch.setattr(web,'store',s)
+    for ident in ['first-profile','same-image-profile']:
+        s.register('profile',{'id':ident,'image':'sha256:'+'a'*64,'version':'pin',
+                             'argv':['/input','/output'],'tools':['read_text_file','write_file']})
+    calls=[]
+    def inspect(profile):
+        calls.append(profile['image'])
+        return False
+    monkeypatch.setattr(packages,'pinned_image_ready',inspect)
+    with TestClient(web.app) as client:
+        default=client.get('/api/catalog').json()
+        assert not calls
+        assert all(p['image_available'] is None for p in default['profiles'])
+        checked=client.get('/api/catalog?include_readiness=true').json()
+        assert len(calls)==1
+        assert all(p['image_available'] is False for p in checked['profiles'])

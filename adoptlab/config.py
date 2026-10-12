@@ -15,7 +15,7 @@ def load_credentials():
 def digest(value):
     return hashlib.sha256(json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
-def doctor(target=None, runtime=RUNTIME):
+def doctor(target=None, runtime=RUNTIME, profile_id=None):
     load_credentials()
     import sys
     import importlib.metadata
@@ -46,6 +46,7 @@ def doctor(target=None, runtime=RUNTIME):
                         profiles=[json.loads(r[0]) for r in c.execute("SELECT content FROM registry WHERE kind='profile'") if {'read_text_file','write_file'}.issubset(json.loads(r[0]).get('tools',[]))]
                         task_profiles={json.loads(r[0]).get('profile') for r in c.execute("SELECT content FROM registry WHERE kind='task'")}
                         profiles=[p for p in profiles if p['id'] in task_profiles]
+                        if profile_id is not None:profiles=[p for p in profiles if p['id']==profile_id]
                         registered=bool(profiles)
                 except sqlite3.Error:pass
             checks.append({'id':'filesystem_registration','required':True,'passed':registered,'action':'Register a pinned Filesystem profile and its matching task. Use new IDs when rebuilding an existing profile.'})
@@ -54,7 +55,7 @@ def doctor(target=None, runtime=RUNTIME):
         if target=='model':
             checks.extend([{'id':'model_key','required':True,'passed':bool(os.getenv('DEEPSEEK_API_KEY')),'action':'Configure DEEPSEEK_API_KEY in your private local .env.'},
                            {'id':'model_support','required':True,'passed':os.getenv('DEEPSEEK_MODEL','deepseek-flash')=='deepseek-flash','action':'Use the supported deepseek-flash model and verify frozen experiment pricing.'}])
-        return {'target':target,'ready':all(c['passed'] for c in checks if c['required']),'python':sys.version.split()[0],
+        return {'target':target,'profile_id':profile_id,'ready':all(c['passed'] for c in checks if c['required']),'python':sys.version.split()[0],
                 'checks':checks,'dependencies':versions,'gpu_required':False,
                 'optional_capabilities':{'docker':'Required for external container tasks.','model':'Private credentials required for paid inference.','langfuse':'Optional tracing; first-task runs locally without cloud submission.'}}
     return {"python": sys.version.split()[0], "isolated": sys.prefix != sys.base_prefix or (Path(sys.prefix)/"conda-meta").exists(),

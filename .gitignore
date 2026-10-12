@@ -9,6 +9,14 @@ __pycache__/
 runtime/
 *.db
 *.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.log
+.DS_Store
+Thumbs.db
+*.p12
+*.pfx
 node_modules/
 test-results/
 playwright-report/

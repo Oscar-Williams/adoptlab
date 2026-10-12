@@ -1,5 +1,8 @@
 # AdoptLab v0.4: onboarding, diagnosis and revision workbench
 
+AdoptLab helps MCP tool maintainers validate onboarding materials against real developer tasks before release and turn failures into verifiable material revisions.
+
+
 The primary user is an MCP tool maintainer who needs to turn integration friction into a reproducible material revision. A developer needs a first successful task and a useful failure handoff. A portfolio visitor needs independently inspectable evidence. These are workflow roles in a local, single-user application; they are not multi-tenant accounts.
 
 ## Product decisions
@@ -53,3 +56,6 @@ The Windows consolidation on 2026-10-07 added 6 experiments and 20 runs, replaci
 Stop the local service before restoring a reviewed database backup. Preserve the current database and run artifacts first; never overwrite the only recovery copy. Restart with the matching code version. Interrupted runs are inspected/reconciled explicitly; unknown paid requests are not automatically replayed or released from reservations.
 
 The default public landing page is the new Chinese case workspace. `experiments.html` retains the historical explorer and its original report denominators. `workbench.html` remains a direct case entry. The allowlisted Pages build publishes static assets only; it contains no database, execution service, credential, original fixture or observation free text. See [deployment](https://github.com/Oscar-Williams/adoptlab/blob/main/docs/deployment.md) and [upgrade validation](v04-validation.md).
+
+
+Release exports use adoptlab-release-v2. Downloads recheck the exact recorded runs: release preserves the original decision, and current_verification reports the current check time, task results and verdict. Task and material tools are checked before experiment creation; Filesystem readiness is scoped to the selected profile.
