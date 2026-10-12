@@ -215,6 +215,23 @@ def build_docs(out, runtime, plan):
                     for r in p.runs:r.font.size=Pt(10);r.bold=ri==0
         d.add_paragraph();return t
     def prose(d,title,text):d.add_heading(title,2);d.add_paragraph(text)
+    def save_doc(d,path):
+        anchors={}
+        for paragraph in d.paragraphs:
+            found=re.match(r'(FR-\d{2}|AC-\d{2})(.*)',paragraph.text)
+            if found and paragraph.style.name.startswith('Heading'):
+                token,rest=found.groups();anchor=token.replace('-','_');anchors[token]=anchor
+                paragraph.clear();start=OxmlElement('w:bookmarkStart');start.set(qn('w:id'),str(len(anchors)));start.set(qn('w:name'),anchor);paragraph._p.append(start);paragraph.add_run(token)
+                end=OxmlElement('w:bookmarkEnd');end.set(qn('w:id'),str(len(anchors)));paragraph._p.append(end);paragraph.add_run(rest)
+        for paragraph in d.paragraphs:
+            if paragraph.style.name.startswith('Heading') or not any(k in paragraph.text for k in anchors):continue
+            text=paragraph.text;paragraph.clear()
+            for part in re.split(r'(FR-\d{2}|AC-\d{2})',text):
+                if part in anchors:
+                    fld=OxmlElement('w:fldSimple');fld.set(qn('w:instr'),'REF '+anchors[part]+' \\h');run=OxmlElement('w:r');t=OxmlElement('w:t');t.text=part;run.append(t);fld.append(run);paragraph._p.append(fld)
+                else:paragraph.add_run(part)
+        d.save(path)
+
     def include(d,text):
         lines=text.splitlines();pending=[]
         def flush():
@@ -245,7 +262,7 @@ def build_docs(out, runtime, plan):
     for i,(name,actor,when,pain,goal,flow,pages) in enumerate(SCENES,1):
         d.add_heading(f'SC-{i:02d} {name}',2)
         records=[('目的',goal),('场景',f'{actor}在{when}，通过本地工作台或公开案例完成相关任务；发生频率待真实观察。'),('需求描述',pain+'。期望结果：'+goal+'。'),('涉及人员',actor+'负责该环节；实际维护者Oscar承担产品、工程及测试职责。'),('预计上线','0.4为历史基线；0.5按功能、CI、预览和正式站点门槛发布，日期以实际部署记录为准。'),('第三方依赖','内置任务依赖Python及stdio MCP；Filesystem依赖固定Linux镜像；model依赖模型API与费用约束。'),('数据来源','已登记任务、fixture、独立Gold、材料版本、运行及反馈；使用UTF-8和JSON，内容由维护者版本化维护。观察由实际参与过程提供。'),('指标','按协议验收、模型任务效果、工作流完整性、真实观察四组统计；分母和未知项见第5节。'),('安全','本地执行采用工具白名单、路径限制和容器隔离；凭据保留本地，公开输出使用字段白名单。'),('兜底','环境失败返回处理动作；输入错误定位字段；超时及预算终止保留证据；修订由维护者决定后显式复验。')]
-        for title,text in records:prose(d,title,text)
+        for title,text in records:d.add_heading(title,3);d.add_paragraph(text)
         d.add_paragraph('业务路径：'+flow+'；对应UI-'+pages.replace(',', '、UI-')+'。')
     d.add_heading('4 需求池与优先级',1)
     for i,scene in enumerate(SCENES,1):
@@ -254,7 +271,7 @@ def build_docs(out, runtime, plan):
     d.add_heading('6 研究与确认方式',1)
     d.add_paragraph('围绕最近一次接入询问所用工具、具体失败、排查过程、材料、帮助来源及已有产物。观察任务固定为内置首次任务，再按参与者经验选择文档配置案例。记录开始结束、协助、任务ID、运行ID、结果、退出和同意。参与者可以中止，原始身份关联仅本地保留。')
     d.add_paragraph('需求关闭：六场景能够定位到功能、验收和证据；工程指标由记录验证，用户收益由真实观察验证。')
-    d.save(out/'AdoptLab需求文档.docx')
+    save_doc(d,out/'AdoptLab需求文档.docx')
 
     d=new('AdoptLab需求解决方案','D2','选用本地受约束执行与线上证据展示，围绕任务契约、材料版本、失败证据和复验建立连续工作流。本文说明方案取舍、技术可行性、POC及真实案例结果。')
     for title,body in [('1 问题与目标','目标是让维护者把接入失败转化为有证据的材料修改，并确认修改后的任务验收。六组需求及研究状态见D1。'),('2 旧流程与目标流程','旧流程：编辑文档→手工运行脚本→分散保存日志→口头判断修复。目标流程：预检契约→冻结材料与条件→执行→独立规则验收→反馈→不可变修订→同条件复验→发布证据。')]:d.add_heading(title,1);d.add_paragraph(body)
@@ -266,13 +283,26 @@ def build_docs(out, runtime, plan):
     include(d,sections[9].split('### 9.2')[1].split('### 9.3')[0])
     d.add_heading('6 技术预研与POC',1)
     steps=['限定三案例及验收目标','准备fixture与独立Gold','识别模型身份和产物完整性风险','冻结MCP工具schema及白名单','固定Python、容器和模型配置','判断检索适用性：指定小文件无需向量检索','保留protocol与历史model基线','区分人工判断、自动化与真实观察','回溯真实Bad Case','控制材料变量并独立复验','测量耗时、请求、工具与费用','形成继续、调整或暂停决定']
-    for i,step in enumerate(steps,1):prose(d,f'POC-{i:02d} {step}','输入由对应任务、材料和运行指纹固定。执行结果关联EVID，异常保留原始状态。'+('历史task-09存在output_mismatch；材料矩阵结果保留逐次记录，不以协议成功推断模型收益。' if i==9 else '验收采用PRD对应AC及独立规则。'))
+    details=[
+'范围固定为记录规范化、文档证据、配置与引用三案例；分别验收JSON字段、集合及引用位置，输出运行ID、判定和可导出证据。',
+'使用版本化UTF-8夹具和JSON规则。维护者独立定义Gold；公开任务说明提供目标，模型上下文排除expected、规则和protocol参考步骤。',
+'风险优先级为错误通过、未知模型混比和重复提交。通过产物篡改、未知响应身份、并发同键请求分别检验对应保护。',
+'内置工具沿用记录契约；Filesystem固定read_text_file/write_file白名单、输入只读挂载与输出目录。调用前校验参数及路径，返回结构由独立规则核对。',
+'Python环境与安装导入指向统一仓库；Docker inspect确认固定镜像ID后实跑。model继承原请求、输出、时间和费用限制。启动成功与任务通过分开确认。',
+'任务明确指定少量文件和目标字段，采用直接读取保留原行号。向量索引、召回和重排增加依赖而无已证实收益，因此保留为未来大规模检索需求的独立选型。',
+'protocol基线验证工具与独立验收；历史model采用12任务×4材料×3次矩阵。固定材料、task/schema和模型来源，历史与新验证各自保留分母。',
+'工程验收由自动化执行，材料修改由维护者判断；真实开发者任务需取得同意并记录协助程度。自动化浏览器操作不增加真人数。',
+'历史task-09的AA模型运行存在output_mismatch，查看原运行、产物与材料差异；从输入、选工具、参数、产物、验收逐层定位，原因假设与已观察失败分开。',
+'历史2×2矩阵分别改变指南与描述，保留重复试验及任务类别。新增protocol修订两侧均通过，结论为闭环可执行；新模型改善试验依原预算另取证。',
+'按运行记录报告elapsed_seconds、requests、tools和费用上界。unknown usage继续占用预留；没有节点时间戳时不推导TTFT或模型分阶段耗时。',
+'工程保护和三案例通过后继续发布精选证据；模型身份或证据不完整则暂停对应比较；真实收益在观察后更新。决定关联PRD AC及版本，不将单例通过外推到全部用户。']
+    for i,(step,detail) in enumerate(zip(steps,details),1):prose(d,f'POC-{i:02d} {step}',detail)
     d.add_heading('7 三案例验证',1);evidence_section(d)
     d.add_heading('8 风险与决定',1);include(d,sections[11].split('\n',1)[1])
     d.add_heading('9 成本性能及继续条件',1)
     d.add_paragraph('protocol不产生模型费用。model每次最多8个请求、单次响应最多8个工具调用、单次输出1024 token；输入按UTF-8字节预算控制。未知usage保留预留费用。继续条件为独立验收可执行、费用在原约束内、证据支持结论。真实采用效益待观察。')
     d.add_heading('10 直接依据',1);d.add_paragraph('课程1—8、PRD_Ready、现有任务和独立验证器、report.json历史矩阵、新版三案例记录；Promptfoo https://www.promptfoo.dev/docs/integrations/mcp-server/；Langfuse https://langfuse.com/docs/evaluation/experiments/datasets。')
-    d.save(out/'AdoptLab需求解决方案.docx')
+    save_doc(d,out/'AdoptLab需求解决方案.docx')
 
     d=new('AdoptLab产品需求文档PRD','D3','本规格服务研发、测试和维护，定义14类界面、AI执行边界、数据关系和验收。源自D1用户问题与D2方案决策；元素与节点编号与两份SVG对应。')
     d.add_heading('1 文档控制与评审',1);table(d,['版本','修改内容','时间','责任'],[['0.4基线','原工作台与三案例协议闭环','2026-10-07','Oscar'],['0.5规格','分组比较、实时核验、幂等、字段定位及迁移','2026-10-12','Oscar']]);d.add_paragraph('评审按产品、工程、测试、数据和设计视角执行，由实际维护者承担；用户确认实施范围。功能完成状态以证据和测试结果回填。')
@@ -336,6 +366,7 @@ def build_docs(out, runtime, plan):
             rows.append([field,'是' if field in definition.get('required',[]) else '否',json.dumps(constraints,ensure_ascii=False)])
         table(d,['字段','必填','类型 默认值与校验'],rows)
     d.add_heading('接口行为与副作用',2)
+    d.add_paragraph('下列状态为OpenAPI声明；统一异常处理另返回400业务校验错误、404不存在、409幂等或关系冲突、422字段错误，以及Host/Origin和请求大小中间件限制。错误体使用error与fields，记录具体字段位置。')
     for route,methods in api['paths'].items():
         if not route.startswith('/api/'):continue
         for method,operation in methods.items():
@@ -354,7 +385,7 @@ def build_docs(out, runtime, plan):
     table(d,['需求','功能与页面','验收范围'],[[f'REQ-{i:02d}',x[6], '对应FR列明的AC'] for i,x in enumerate(SCENES,1)])
     d.add_paragraph('真实采用待取得观察；模型改进使用历史冻结矩阵，新增费用需遵守现有预算；Figma云端保存状态单独确认。原型展示目标和当前状态均通过明确标签区分。')
     d.add_heading('12 直接来源',1);include(d,sections[4].split('\n',1)[1]);d.add_heading('课程要求追踪',2);include(d,sections[3].split('\n',1)[1])
-    d.save(out/'AdoptLab产品需求文档PRD.docx')
+    save_doc(d,out/'AdoptLab产品需求文档PRD.docx')
 
 
 def svg_text(x,y,value,size=18,width=48):
